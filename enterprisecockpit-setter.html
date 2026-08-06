@@ -408,6 +408,9 @@
     <div id="script-pane">
         <h2>Call Flow & Scripting</h2>
 
+        <button type="button" class="btn-primary btn-transaction" id="btn-next-lead-script" onclick="handleClaimNextLead()">Next Available Lead</button>
+        <div id="next-lead-status-script" style="font-size:12px; color: var(--sp-text-dim); margin: 6px 0 20px; min-height:16px;"></div>
+
         <div class="script-field-wrapper">
             <label>Customer Phone Number</label>
             <input type="tel" id="script-phone-input" placeholder="(801) 555-0199" required oninput="syncPhoneValue(this.value)">
@@ -861,7 +864,7 @@
             // (SERVICE-889415757227.us-central1.run.app). Confirm this matches
             // what `gcloud run deploy` actually prints — see step 1 in
             // SETTER_UPDATE_ROADMAP.md — and fix it here if it differs.
-            leadsUrl: "https://jitneyleads-889415757227.us-central1.run.app",
+            leadsUrl: "https://jitneyleads-889415757227.us-central1.run.app/",
             // dialerWebhookUrl intentionally omitted until we know this client's
             // actual dialer — live transfers still work without it (see
             // initIncomingTransferBanner in the shared engine).
@@ -988,22 +991,24 @@
         }
 
         async function handleClaimNextLead() {
-            const btn = document.getElementById('btn-next-lead');
-            const statusEl = document.getElementById('next-lead-status');
-            btn.disabled = true;
-            statusEl.innerText = "Checking the queue...";
+            // Two instances of this button exist — one in the script pane,
+            // one in the record-col — because CSS shows exactly one of those
+            // two panes at a time (see .record-col / body.hide-script-pane
+            // rules). Both get disabled/updated together; whichever is
+            // actually visible is the one the rep sees react.
+            const buttons = [document.getElementById('btn-next-lead'), document.getElementById('btn-next-lead-script')];
+            const statusEls = [document.getElementById('next-lead-status'), document.getElementById('next-lead-status-script')];
+            buttons.forEach(btn => { if (btn) btn.disabled = true; });
+            statusEls.forEach(el => { if (el) el.innerText = "Checking the queue..."; });
             try {
                 const lead = await fireClaimNextQueuedLead();
-                if (!lead) {
-                    statusEl.innerText = "Queue is empty right now.";
-                } else {
-                    statusEl.innerText = "";
-                    populateCockpitFromLead(lead);
-                }
+                const msg = lead ? "" : "Queue is empty right now.";
+                statusEls.forEach(el => { if (el) el.innerText = msg; });
+                if (lead) populateCockpitFromLead(lead);
             } catch (err) {
-                statusEl.innerText = err.message;
+                statusEls.forEach(el => { if (el) el.innerText = err.message; });
             } finally {
-                btn.disabled = false;
+                buttons.forEach(btn => { if (btn) btn.disabled = false; });
             }
         }
 
