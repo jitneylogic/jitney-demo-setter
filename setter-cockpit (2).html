@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setter Cockpit | RevOps Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    /* Ported directly from enterprisecockpit.html's :root + body.theme-executive
+       blocks, so this cockpit re-skins identically to the closer cockpit —
+       same two states (Green default / Executive), same toggle mechanism,
+       same localStorage key so a rep's preference carries across cockpits. */
+    :root {
+        --color-bg-dark: #223129;
+        --color-box-translucent: rgba(255, 255, 255, 0.05);
+        --color-border-deep: #1E5E3F;
+        --color-sage-accent: #4C9170;
+        --color-mint-soft: #8DC4AA;
+        --color-white: #ffffff;
+        --text-on-dark: #f8fafc;
+        --text-on-light: #1e293b;
+        --gold-accent: #D9A441;
+        --gold-dim: rgba(217,164,65,0.14);
+        --focus-glow: rgba(76, 145, 112, 0.2);
+        --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    body.theme-executive {
+        --color-bg-dark: hsl(210, 15%, 12%);
+        --color-box-translucent: rgba(255,255,255,0.03);
+        --color-sage-accent: hsl(259, 30%, 42%);
+        --color-mint-soft: hsl(259, 15%, 70%);
+        --gold-accent: hsl(180, 60%, 50%);
+        --gold-dim: hsla(180, 60%, 50%, 0.1);
+        --focus-glow: rgba(90, 74, 140, 0.2);
+        --shadow-soft: 0 10px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.1);
+    }
+    body.theme-executive .btn-live-transfer { box-shadow: 0 2px 6px rgba(90,74,140,0.35); }
+    body.theme-executive .btn-live-transfer:hover { box-shadow: 0 3px 8px rgba(90,74,140,0.45); }
+
+    * { box-sizing: border-box; }
+    body {
+        margin: 0; font-family: 'Manrope', -apple-system, sans-serif;
+        background: var(--color-bg-dark); color: var(--text-on-dark); min-height: 100vh;
+        transition: background 0.2s;
+    }
+    header {
+        padding: 20px 28px; border-bottom: 2px solid var(--color-sage-accent);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    header h1 { margin: 0; font-size: 18px; color: var(--color-mint-soft); font-family: 'Fraunces', serif; font-weight: 500; }
+    header button { background: transparent; border: 1px solid var(--color-mint-soft); color: var(--color-mint-soft);
+        padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+
+    .theme-toggle { display: flex; background: rgba(255,255,255,0.1); border-radius: 20px; padding: 3px; gap: 2px; }
+    .theme-toggle button {
+        border: none; background: transparent; color: var(--text-on-dark); padding: 6px 14px;
+        border-radius: 16px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.5px; cursor: pointer; transition: background 0.15s;
+    }
+    .theme-toggle button.active { background: var(--color-sage-accent); color: #fff; }
+
+    main { max-width: 620px; margin: 0 auto; padding: 28px; }
+    .card { background: var(--color-box-translucent); border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px; padding: 24px; margin-bottom: 20px; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 11px;
+        text-transform: uppercase; color: var(--color-mint-soft); letter-spacing: 0.5px; }
+    input[type="text"], input[type="tel"], textarea {
+        width: 100%; padding: 10px 12px; margin-bottom: 16px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.15);
+        font-size: 14px; background: #ffffff; color: var(--text-on-light); font-family: inherit;
+    }
+    textarea { min-height: 70px; resize: vertical; }
+    #setter-address-suggest-panel { position: relative; }
+
+    .pest-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 16px; }
+    .pest-grid label { text-transform: none; font-weight: 400; font-size: 13px; color: var(--text-on-dark); display: flex; align-items: center; gap: 6px; }
+
+    .qual-toggle { display: flex; gap: 10px; margin-bottom: 20px; }
+    .qual-toggle button {
+        flex: 1; padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15);
+        background: transparent; color: var(--text-on-dark); cursor: pointer; font-size: 13px; font-weight: 600;
+    }
+    .qual-toggle button.active-qualified { background: var(--color-sage-accent); border-color: var(--color-sage-accent); }
+    .qual-toggle button.active-unqualified { background: #7a3b3b; border-color: #7a3b3b; }
+
+    .action-row { display: flex; gap: 12px; }
+    .btn-live-transfer, .btn-queue {
+        flex: 1; padding: 14px; border: none; border-radius: 8px; font-size: 14px; font-weight: 700;
+        cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-live-transfer { background: var(--color-sage-accent); color: #fff; }
+    .btn-queue { background: transparent; color: var(--color-mint-soft); border: 1px solid var(--color-mint-soft); }
+    .btn-live-transfer:disabled, .btn-queue:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #status-msg { margin-top: 14px; font-size: 13px; text-align: center; min-height: 18px; }
+
+    #login-gate { display:flex; align-items:center; justify-content:center; height:100vh; width:100vw;
+        position:fixed; top:0; left:0; background:var(--color-bg-dark); z-index:1000; }
+    #login-gate .box { background:var(--color-box-translucent); border:1px solid rgba(255,255,255,0.1);
+        border-radius:8px; padding:30px; width:320px; }
+    #login-gate input { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.15); }
+    #login-gate button { width: 100%; padding: 10px; background: var(--color-sage-accent); color: #fff; border: none;
+        border-radius: 6px; cursor: pointer; font-weight: 700; }
+    #login-error { color: #ef4444; font-size: 12px; min-height: 16px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<!-- Same login gate markup/ids as the closer cockpits — attemptLogin() in the
+     shared engine works unchanged. -->
+<div id="login-gate">
+    <div class="box">
+        <h2 style="margin-top:0; color: var(--color-mint-soft);">Setter Login</h2>
+        <input type="text" id="login-email" placeholder="Email">
+        <input type="password" id="login-password" placeholder="Password">
+        <button onclick="attemptLogin()">Log In</button>
+        <div id="login-error"></div>
+        <a href="#" onclick="sendCockpitResetEmail(); return false;" style="color: var(--color-mint-soft); font-size:12px;">Forgot password?</a>
+    </div>
+</div>
+
+<div id="main-app" style="display:none;">
+<header>
+    <h1>Setter Cockpit — <span class="cfg-rep-name"></span></h1>
+    <div style="display:flex; align-items:center; gap:16px;">
+        <div class="theme-toggle">
+            <button type="button" id="theme-btn-dark" onclick="setScriptPaneTheme('dark')">Green</button>
+            <button type="button" id="theme-btn-executive" onclick="setScriptPaneTheme('executive')">Executive</button>
+        </div>
+        <button onclick="attemptLogout()">Log Out</button>
+    </div>
+</header>
+
+<main>
+    <div class="card">
+        <label for="setter-customer-name">Customer Name</label>
+        <input type="text" id="setter-customer-name" placeholder="Full name">
+
+        <label for="setter-customer-phone">Phone Number</label>
+        <input type="tel" id="setter-customer-phone" placeholder="(555) 555-5555">
+
+        <label for="setter-address-input">Address</label>
+        <input type="text" id="setter-address-input" placeholder="Start typing an address...">
+
+        <label>Pest / Service Interest</label>
+        <div class="pest-grid">
+            <label><input type="checkbox" class="setter-pest-cb" data-display="General Pests"> General Pests</label>
+            <label><input type="checkbox" class="setter-pest-cb" data-display="Ticks, Fleas, Mosquitos"> Ticks, Fleas, Mosquitos</label>
+            <label><input type="checkbox" class="setter-pest-cb" data-display="German Roaches"> German Roaches</label>
+            <label><input type="checkbox" class="setter-pest-cb" data-display="Interior Rodent"> Interior Rodent</label>
+            <label><input type="checkbox" class="setter-pest-cb" data-display="Exterior Rodent"> Exterior Rodent</label>
+            <label><input type="checkbox" class="setter-pest-cb" data-display="Mole"> Mole</label>
+            <label><input type="checkbox" class="setter-pest-cb" data-display="Carpenter Bees"> Carpenter Bees</label>
+        </div>
+
+        <label for="setter-notes">Notes</label>
+        <textarea id="setter-notes" placeholder="Anything the closer should know before picking up"></textarea>
+
+        <label>Qualified?</label>
+        <div class="qual-toggle">
+            <button type="button" id="btn-qualified" onclick="setQualified(true)">Qualified</button>
+            <button type="button" id="btn-unqualified" onclick="setQualified(false)">Unqualified</button>
+        </div>
+
+        <div class="action-row">
+            <button class="btn-live-transfer" id="btn-live-transfer" onclick="handleLiveTransfer()">Live Transfer</button>
+            <button class="btn-queue" id="btn-send-queue" onclick="handleSendToQueue()">Send to Queue</button>
+        </div>
+        <div id="status-msg"></div>
+    </div>
+</main>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=REPLACE-WITH-MAPS-KEY&libraries=places&loading=async&callback=Function.prototype"></script>
+<script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=1"></script>
+<script>
+    // Same config pattern as every other cockpit — clientId, firebaseConfig,
+    // and leadsUrl are the only new pieces this file needs.
+    window.JITNEYLOGIC_CONFIG = {
+        clientId: "demo-pest-co",
+        // See the comment in enterprisecockpit-setter.html — same predicted
+        // URL, confirm it after step 1 in SETTER_UPDATE_ROADMAP.md.
+        leadsUrl: "https://jitneyleads-889415757227.us-central1.run.app/",
+        adminUrl: "https://jitneyadmin-889415757227.us-central1.run.app/",
+        firebaseConfig: {
+            apiKey: "AIzaSyDkWrGWcepdHlkzkeSGWLiIrV0Kxsul4nE",
+            authDomain: "jitneylogic-beta.firebaseapp.com",
+            projectId: "jitneylogic-beta",
+            storageBucket: "jitneylogic-beta.firebasestorage.app",
+            messagingSenderId: "889415757227",
+            appId: "1:889415757227:web:9e54a600eb654bb30276ee",
+            measurementId: "G-4JECF3BX6E"
+        }
+        // dialerWebhookUrl intentionally omitted until we know HomeShield's
+        // actual dialer — fireSubmitLead() just skips that step until it's set.
+    };
+
+    const clientOnboardingConfig = { repName: "Setter" };
+
+    // Same toggle as enterprisecockpit.html's Green/Executive switch, same
+    // localStorage key and syncThemePreference() call, so a rep's choice
+    // carries across cockpits. The closer cockpit's version also toggles a
+    // #script-pane light/dark sub-state — there's no script pane here, so
+    // that half is simply omitted rather than faked.
+    function setScriptPaneTheme(mode) {
+        document.body.classList.toggle('theme-executive', mode === 'executive');
+        document.getElementById('theme-btn-dark').classList.toggle('active', mode === 'dark');
+        document.getElementById('theme-btn-executive').classList.toggle('active', mode === 'executive');
+        localStorage.setItem('jitneylogic_script_pane_theme', mode);
+        if (window.syncThemePreference) window.syncThemePreference(mode);
+    }
+    window.setScriptPaneTheme = setScriptPaneTheme;
+    setScriptPaneTheme(localStorage.getItem('jitneylogic_script_pane_theme') || 'dark');
+
+    let qualifiedState = null;
+    function setQualified(val) {
+        qualifiedState = val;
+        document.getElementById('btn-qualified').classList.toggle('active-qualified', val === true);
+        document.getElementById('btn-unqualified').classList.toggle('active-unqualified', val === false);
+    }
+
+    function readLeadFromForm() {
+        return {
+            customerName: document.getElementById('setter-customer-name').value.trim(),
+            customerPhone: document.getElementById('setter-customer-phone').value.trim(),
+            address: document.getElementById('setter-address-input').value.trim(),
+            pestTypes: Array.from(document.querySelectorAll('.setter-pest-cb:checked')).map(cb => cb.getAttribute('data-display')),
+            notes: document.getElementById('setter-notes').value.trim(),
+            qualified: qualifiedState
+        };
+    }
+
+    function clearForm() {
+        document.getElementById('setter-customer-name').value = '';
+        document.getElementById('setter-customer-phone').value = '';
+        document.getElementById('setter-address-input').value = '';
+        document.querySelectorAll('.setter-pest-cb').forEach(cb => cb.checked = false);
+        document.getElementById('setter-notes').value = '';
+        setQualified(null);
+        document.getElementById('btn-qualified').classList.remove('active-qualified');
+        document.getElementById('btn-unqualified').classList.remove('active-unqualified');
+    }
+
+    function setButtonsDisabled(disabled) {
+        document.getElementById('btn-live-transfer').disabled = disabled;
+        document.getElementById('btn-send-queue').disabled = disabled;
+    }
+
+    async function handleLiveTransfer() {
+        const lead = readLeadFromForm();
+        if (!lead.customerName || !lead.customerPhone) {
+            showStatus("Name and phone are required before transferring.", true);
+            return;
+        }
+        setButtonsDisabled(true);
+        showStatus("Transferring — waiting for a closer to pick up...", false);
+        try {
+            await fireSubmitLead(lead, "live");
+            showStatus("Sent — announced to all available closers.", false);
+            clearForm();
+        } catch (err) {
+            showStatus(err.message, true);
+        } finally {
+            setButtonsDisabled(false);
+        }
+    }
+
+    async function handleSendToQueue() {
+        const lead = readLeadFromForm();
+        if (!lead.customerName || !lead.customerPhone) {
+            showStatus("Name and phone are required before sending to the queue.", true);
+            return;
+        }
+        setButtonsDisabled(true);
+        showStatus("Sending to queue...", false);
+        try {
+            await fireSubmitLead(lead, "queue");
+            showStatus("In the queue — next available closer will pick it up.", false);
+            clearForm();
+        } catch (err) {
+            showStatus(err.message, true);
+        } finally {
+            setButtonsDisabled(false);
+        }
+    }
+
+    function showStatus(msg, isError) {
+        const el = document.getElementById('status-msg');
+        el.innerText = msg;
+        el.style.color = isError ? "#ef4444" : "var(--color-mint-soft)";
+    }
+
+    function startAppAfterLogin() {
+        document.querySelectorAll('.cfg-rep-name').forEach(el => el.innerText = clientOnboardingConfig.repName || getRepName() || '');
+        initAddressAutocomplete(['setter-address-input']);
+        document.getElementById('login-gate').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+    }
+
+    // initAuthGate() (defined in the shared engine) calls startAppAfterLogin()
+    // once Firebase confirms a signed-in rep — same flow as every other cockpit.
+    initAuthGate();
+</script>
+</body>
+</html>
