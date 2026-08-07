@@ -302,22 +302,23 @@ function closeAddressDropdown(inputEl) {
 }
 
 async function selectAddressSuggestion(inputEl, suggestion) {
+    let finalValue;
     try {
         const place = suggestion.placePrediction.toPlace();
         await place.fetchFields({ fields: ["addressComponents", "formattedAddress"] });
         currentAddressComponents = parsePlaceComponents(place);
-        syncAddressValue(place.formattedAddress || suggestion.placePrediction.text.text);
+        finalValue = place.formattedAddress || suggestion.placePrediction.text.text;
     } catch (err) {
-        // fetchFields can fail (API restriction, quota, transient network) —
-        // previously this just threw silently and the whole click/Enter did
-        // nothing, which looked exactly like "selection doesn't work." Now
-        // it always finishes the selection using the raw prediction text;
-        // the only thing lost on this fallback path is structured address
-        // components (zip, etc.) for this one address.
         console.error("Address selection: fetchFields failed, using raw prediction text instead:", err.message);
         currentAddressComponents = null;
-        syncAddressValue(suggestion.placePrediction.text.text);
+        finalValue = suggestion.placePrediction.text.text;
     }
+    // Update the field that actually triggered this directly — guaranteed
+    // correct regardless of its id — then also run syncAddressValue() for
+    // the closer cockpit's dual-pane mirroring (now null-safe, so it's a
+    // harmless no-op on any page that doesn't have those two fields).
+    inputEl.value = finalValue;
+    syncAddressValue(finalValue);
     closeAddressDropdown(inputEl);
     addressSessionToken = null; // session ends on selection
 }
@@ -436,8 +437,15 @@ function initAddressAutocomplete(ids) {
 window.initAddressAutocomplete = initAddressAutocomplete;
 
 function syncAddressValue(val) {
-    document.getElementById('script-address-input').value = val;
-    document.getElementById('right-address').value = val;
+    // Null-safe on purpose — this used to assume both closer-cockpit fields
+    // always exist and crash (TypeError on .value of null) anywhere else,
+    // which is exactly what was breaking address selection on the setter
+    // cockpit: the crash happened before closeAddressDropdown() ever ran,
+    // so the dropdown looked unresponsive instead of erroring visibly.
+    const scriptField = document.getElementById('script-address-input');
+    const rightField = document.getElementById('right-address');
+    if (scriptField) scriptField.value = val;
+    if (rightField) rightField.value = val;
 }
 
 function syncDateValue(val) {
