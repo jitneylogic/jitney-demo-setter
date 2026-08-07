@@ -1106,13 +1106,23 @@ async function fireRevenuePipelineTracking(event) {
         // write within a moment; we don't want to block form reset on it.
     }
 
-    // Setter -> closer handoff: whatever lead this call was for is done now,
-    // one way or another (sold, not sold, callback) — free the closer up to
-    // claim the next one. Same fire-and-forget treatment as the loggerUrl
-    // call directly above; window.currentActiveLeadId gets cleared in the
-    // reset block below regardless of whether this succeeds.
-    if (window.currentActiveLeadId && window.fireCompleteLead) {
-        fireCompleteLead(window.currentActiveLeadId);
+    // Setter -> closer handoff: whatever lead this call was for is resolved
+    // now, one way or another. "Release Lead" is a distinct outcome, not a
+    // separate button anymore — selecting it and submitting puts the lead
+    // back in the queue instead of marking it complete, so it becomes
+    // claimable again (by this closer or anyone else) rather than
+    // permanently stuck as "theirs." Still goes through the normal
+    // jitneylogger POST above first, on purpose — that's what makes "how
+    // often is this happening, and to which reps" a real, visible stat
+    // later, the same way every other incentive problem in this system
+    // gets caught by being in the data, not by intuition.
+    if (window.currentActiveLeadId) {
+        if (outcome === "Release Lead" && window.fireReleaseLead) {
+            fireReleaseLead(window.currentActiveLeadId).catch(err =>
+                console.error("release_lead failed (non-blocking):", err.message));
+        } else if (window.fireCompleteLead) {
+            fireCompleteLead(window.currentActiveLeadId);
+        }
     }
 
     const logTableBody = document.getElementById('tracker-log-tbody');
