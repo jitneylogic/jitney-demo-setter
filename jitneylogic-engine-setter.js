@@ -1167,7 +1167,8 @@ async function fireRevenuePipelineTracking(event) {
     window.currentCallId = null;
     window.currentFieldroutesAccountNumber = null;
     window.currentActiveLeadId = null;
-    document.querySelectorAll('.release-lead-btn').forEach(btn => btn.style.display = 'none');
+    document.querySelectorAll('.setter-notes-box').forEach(box => box.style.display = 'none');
+    document.querySelectorAll('#next-lead-status, #next-lead-status-script').forEach(el => el.innerText = '');
     if (window.renderIncomingBanner) window.renderIncomingBanner(); // a pending transfer may now be free to show
     syncScheduleDetails();
     runDynamicGuardrails();
