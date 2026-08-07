@@ -950,6 +950,22 @@
             // already the shared engine's per-file "run after login" hook, so
             // no changes to the shared engine's startAppAfterLogin were needed.
             initHandoffListeners();
+
+            // Recover state after a reload — without this, a refresh while a
+            // lead was claimed left the server correctly still holding the
+            // lock but the cockpit with no memory of which lead it was, and
+            // no way to complete or release it. Runs every load; harmless
+            // no-op if there's nothing active.
+            checkForActiveLeadOnLoad();
+        }
+
+        async function checkForActiveLeadOnLoad() {
+            if (!window.fireGetActiveLead) return;
+            const lead = await fireGetActiveLead();
+            if (!lead) return;
+            populateCockpitFromLead(lead);
+            const statusEls = [document.getElementById('next-lead-status'), document.getElementById('next-lead-status-script')];
+            statusEls.forEach(el => { if (el) el.innerText = "Restored your active lead from before the reload."; });
         }
 
         // =====================================================================
@@ -964,6 +980,13 @@
 
         function renderIncomingBanner() {
             const banner = document.getElementById('incoming-transfer-banner');
+            // Don't interrupt someone already on a lead — it stays queued in
+            // pendingTransfers and will show the moment they free up (see the
+            // calls to this same function after completing/releasing below).
+            if (window.currentActiveLeadId) {
+                banner.style.display = 'none';
+                return;
+            }
             const ids = Object.keys(pendingTransfers);
             if (ids.length === 0) {
                 banner.style.display = 'none';
@@ -1043,6 +1066,8 @@
         // Wrong number, no answer, etc — let the closer hand this lead back
         // to the queue instead of being stuck holding it (which would also
         // block them from claiming anything else, per the busy-guard above).
+        window.renderIncomingBanner = renderIncomingBanner;
+
         async function handleReleaseLead() {
             if (!window.currentActiveLeadId) return;
             if (!confirm("Release this lead back to the queue? It'll go to whoever's next, including possibly you again.")) return;
@@ -1050,6 +1075,7 @@
                 await fireReleaseLead(window.currentActiveLeadId);
                 window.currentActiveLeadId = null;
                 document.querySelectorAll('.release-lead-btn').forEach(btn => btn.style.display = 'none');
+                renderIncomingBanner(); // a pending transfer may now be free to show
             } catch (err) {
                 alert("Couldn't release this lead: " + err.message);
             }
