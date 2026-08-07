@@ -1086,6 +1086,15 @@ async function fireRevenuePipelineTracking(event) {
         // write within a moment; we don't want to block form reset on it.
     }
 
+    // Setter -> closer handoff: whatever lead this call was for is done now,
+    // one way or another (sold, not sold, callback) — free the closer up to
+    // claim the next one. Same fire-and-forget treatment as the loggerUrl
+    // call directly above; window.currentActiveLeadId gets cleared in the
+    // reset block below regardless of whether this succeeds.
+    if (window.currentActiveLeadId && window.fireCompleteLead) {
+        fireCompleteLead(window.currentActiveLeadId);
+    }
+
     const logTableBody = document.getElementById('tracker-log-tbody');
     if (logTableBody) {
         const timestampString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1127,6 +1136,8 @@ async function fireRevenuePipelineTracking(event) {
     document.getElementById('create-customer-status').innerText = "";
     window.currentCallId = null;
     window.currentFieldroutesAccountNumber = null;
+    window.currentActiveLeadId = null;
+    document.querySelectorAll('.release-lead-btn').forEach(btn => btn.style.display = 'none');
     syncScheduleDetails();
     runDynamicGuardrails();
     parseScriptPestLogicHandshake();
@@ -1231,7 +1242,11 @@ async function fireClaimTransferLead(leadId) {
         body: JSON.stringify({ action: "claim_transfer_lead", clientId: config.clientId, leadId })
     });
     const data = await resp.json();
-    if (resp.status === 409) return null; // someone else already claimed it
+    // Two different reasons can produce a 409: someone else claimed this
+    // exact transfer first (silent — the banner just moves on), or this
+    // closer already has a different lead active (real error, must be shown
+    // rather than swallowed, or they'd never learn why nothing happened).
+    if (resp.status === 409 && data.reason === "claimed_by_other") return null;
     if (!resp.ok || data.status !== "success") {
         throw new Error(data.message || "Couldn't claim this transfer.");
     }
@@ -1257,4 +1272,45 @@ function initIncomingTransferBanner(onIncoming) {
             });
         });
 }
+// CLOSER SIDE — mark the currently-claimed lead done. Called automatically
+// right after a call is submitted (see the edit to fireRevenuePipelineTracking
+// below) — this is what actually frees the closer to claim another lead.
+async function fireCompleteLead(leadId) {
+    const config = getConfig();
+    if (!config.leadsUrl || !leadId) return;
+    try {
+        const authHeader = await getAuthHeader();
+        await fetch(config.leadsUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...authHeader },
+            body: JSON.stringify({ action: "complete_lead", clientId: config.clientId, leadId })
+        });
+    } catch (err) {
+        // Non-blocking on purpose, same as the loggerUrl call right above it
+        // in fireRevenuePipelineTracking — a rep's next claim attempt will
+        // surface a clear error if this silently failed, rather than
+        // blocking form reset on it.
+        console.error("complete_lead failed (non-blocking):", err.message);
+    }
+}
+window.fireCompleteLead = fireCompleteLead;
+
+// CLOSER SIDE — release a claimed lead back to the queue without
+// submitting a call for it (wrong number, no answer, etc).
+async function fireReleaseLead(leadId) {
+    const config = getConfig();
+    if (!config.leadsUrl) throw new Error("Setup error: leadsUrl is not configured.");
+    const authHeader = await getAuthHeader();
+    const resp = await fetch(config.leadsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify({ action: "release_lead", clientId: config.clientId, leadId })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.status !== "success") {
+        throw new Error(data.message || "Couldn't release this lead.");
+    }
+}
+window.fireReleaseLead = fireReleaseLead;
+
 window.initIncomingTransferBanner = initIncomingTransferBanner;
