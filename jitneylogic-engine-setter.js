@@ -1158,6 +1158,7 @@ async function fireRevenuePipelineTracking(event) {
     window.currentFieldroutesAccountNumber = null;
     window.currentActiveLeadId = null;
     document.querySelectorAll('.release-lead-btn').forEach(btn => btn.style.display = 'none');
+    if (window.renderIncomingBanner) window.renderIncomingBanner(); // a pending transfer may now be free to show
     syncScheduleDetails();
     runDynamicGuardrails();
     parseScriptPestLogicHandshake();
@@ -1313,6 +1314,31 @@ async function fireCompleteLead(leadId) {
         console.error("complete_lead failed (non-blocking):", err.message);
     }
 }
+// CLOSER SIDE — check whether this closer already has a lead claimed,
+// server-side. Called on page load, not just when claiming — this is what
+// lets the cockpit recover its state after a reload instead of leaving
+// someone stuck with a server-side lock and no client-side memory of it.
+async function fireGetActiveLead() {
+    const config = getConfig();
+    if (!config.leadsUrl) return null;
+    try {
+        const authHeader = await getAuthHeader();
+        const resp = await fetch(config.leadsUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...authHeader },
+            body: JSON.stringify({ action: "get_active_lead", clientId: config.clientId })
+        });
+        if (resp.status === 204) return null;
+        const data = await resp.json();
+        if (!resp.ok || data.status !== "success") return null;
+        return data.lead;
+    } catch (err) {
+        console.error("get_active_lead check failed (non-blocking):", err.message);
+        return null;
+    }
+}
+window.fireGetActiveLead = fireGetActiveLead;
+
 window.fireCompleteLead = fireCompleteLead;
 
 // CLOSER SIDE — release a claimed lead back to the queue without
