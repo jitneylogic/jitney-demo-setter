@@ -302,10 +302,22 @@ function closeAddressDropdown(inputEl) {
 }
 
 async function selectAddressSuggestion(inputEl, suggestion) {
-    const place = suggestion.placePrediction.toPlace();
-    await place.fetchFields({ fields: ["addressComponents", "formattedAddress"] });
-    currentAddressComponents = parsePlaceComponents(place);
-    syncAddressValue(place.formattedAddress || suggestion.placePrediction.text.text);
+    try {
+        const place = suggestion.placePrediction.toPlace();
+        await place.fetchFields({ fields: ["addressComponents", "formattedAddress"] });
+        currentAddressComponents = parsePlaceComponents(place);
+        syncAddressValue(place.formattedAddress || suggestion.placePrediction.text.text);
+    } catch (err) {
+        // fetchFields can fail (API restriction, quota, transient network) —
+        // previously this just threw silently and the whole click/Enter did
+        // nothing, which looked exactly like "selection doesn't work." Now
+        // it always finishes the selection using the raw prediction text;
+        // the only thing lost on this fallback path is structured address
+        // components (zip, etc.) for this one address.
+        console.error("Address selection: fetchFields failed, using raw prediction text instead:", err.message);
+        currentAddressComponents = null;
+        syncAddressValue(suggestion.placePrediction.text.text);
+    }
     closeAddressDropdown(inputEl);
     addressSessionToken = null; // session ends on selection
 }
