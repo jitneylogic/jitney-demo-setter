@@ -409,7 +409,10 @@
         <h2>Call Flow & Scripting</h2>
 
         <button type="button" class="btn-primary btn-transaction" id="btn-next-lead-script" onclick="handleClaimNextLead()">Next Available Lead</button>
-        <button type="button" class="btn-copy-action release-lead-btn" style="display:none; width:100%; margin-top:8px; padding:9px; text-align:center;" onclick="handleReleaseLead()">Release Lead Back to Queue</button>
+        <div class="setter-notes-box" id="setter-notes-box-script" style="display:none; margin-top:8px; padding:12px; border-radius:8px; background:rgba(76,145,112,0.12); border:1px solid var(--color-sage-accent);">
+            <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color: var(--color-sage-accent); font-weight:700; margin-bottom:4px;">From Setter</div>
+            <div id="setter-notes-text-script" style="font-size:13px; color: var(--sp-text-dim);"></div>
+        </div>
         <div id="next-lead-status-script" style="font-size:12px; color: var(--sp-text-dim); margin: 6px 0 20px; min-height:16px;"></div>
 
         <div class="script-field-wrapper">
@@ -579,6 +582,7 @@
                     <option value="Sold">Sold</option>
                     <option value="Scheduled Callback">Callback</option>
                     <option value="Not Sold">Lost</option>
+                    <option value="Release Lead">Release Lead (couldn't complete)</option>
                 </select>
             </div>
             <button type="submit" form="closer-portal-form" class="btn-primary btn-transaction">Submit Call</button>
@@ -687,7 +691,10 @@
             <h2>Customer Record</h2>
             <div class="form-section">
                 <button type="button" class="btn-primary btn-transaction" id="btn-next-lead" onclick="handleClaimNextLead()">Next Available Lead</button>
-                <button type="button" class="btn-copy-action release-lead-btn" style="display:none; width:100%; margin-top:8px; padding:9px; text-align:center;" onclick="handleReleaseLead()">Release Lead Back to Queue</button>
+                <div class="setter-notes-box" id="setter-notes-box" style="display:none; margin-top:8px; padding:12px; border-radius:8px; background:rgba(76,145,112,0.12); border:1px solid var(--color-sage-accent);">
+                    <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color: var(--color-sage-accent); font-weight:700; margin-bottom:4px;">From Setter</div>
+                    <div id="setter-notes-text" style="font-size:13px; color: var(--text-on-dark);"></div>
+                </div>
                 <div id="next-lead-status" style="font-size:12px; color: var(--color-mint-soft); margin: 6px 0 16px; min-height:16px;"></div>
 
                 <div class="grid-2">
@@ -784,6 +791,7 @@
                         <option value="Sold">Sold</option>
                         <option value="Scheduled Callback">Callback</option>
                         <option value="Not Sold">Lost</option>
+                        <option value="Release Lead">Release Lead (couldn't complete)</option>
                     </select>
                     <button type="submit" form="closer-portal-form" class="btn-primary btn-transaction">Submit Call</button>
                 </div>
@@ -1027,7 +1035,7 @@
             statusEls.forEach(el => { if (el) el.innerText = "Checking the queue..."; });
             try {
                 const lead = await fireClaimNextQueuedLead();
-                const msg = lead ? "" : "Queue is empty right now.";
+                const msg = lead ? "" : "No leads available, try again.";
                 statusEls.forEach(el => { if (el) el.innerText = msg; });
                 if (lead) populateCockpitFromLead(lead);
             } catch (err) {
@@ -1044,7 +1052,12 @@
         // writing to one side and leaving the other stale.
         function populateCockpitFromLead(lead) {
             window.currentActiveLeadId = lead.id;
-            document.querySelectorAll('.release-lead-btn').forEach(btn => btn.style.display = 'inline-block');
+            document.querySelectorAll('.setter-notes-box').forEach(box => box.style.display = 'block');
+            const noteText = lead.notes || '(no notes left by the setter)';
+            const noteEl1 = document.getElementById('setter-notes-text');
+            const noteEl2 = document.getElementById('setter-notes-text-script');
+            if (noteEl1) noteEl1.innerText = noteText;
+            if (noteEl2) noteEl2.innerText = noteText;
 
             const nameParts = (lead.customerName || '').trim().split(/\s+/);
             const firstName = nameParts.shift() || '';
@@ -1059,28 +1072,16 @@
                 cb.checked = (lead.pestTypes || []).includes(cb.value);
             });
             parseScriptPestLogicHandshake(); // propagates script-pest-cb -> pest-checkbox + notes/facts
-
-            if (lead.notes) syncNotesText(lead.notes); // updates both panes at once
+            // Deliberately NOT calling syncNotesText(lead.notes) here anymore —
+            // that field is the rep's own call notes, not a place to dump the
+            // setter's notes into. They're shown separately above instead.
         }
 
-        // Wrong number, no answer, etc — let the closer hand this lead back
-        // to the queue instead of being stuck holding it (which would also
-        // block them from claiming anything else, per the busy-guard above).
+        // Releasing back to the queue is now handled through the outcome
+        // dropdown ("Release Lead") on the normal Submit Call flow — see
+        // fireRevenuePipelineTracking's outcome branch in the shared engine —
+        // rather than a separate standalone button.
         window.renderIncomingBanner = renderIncomingBanner;
-
-        async function handleReleaseLead() {
-            if (!window.currentActiveLeadId) return;
-            if (!confirm("Release this lead back to the queue? It'll go to whoever's next, including possibly you again.")) return;
-            try {
-                await fireReleaseLead(window.currentActiveLeadId);
-                window.currentActiveLeadId = null;
-                document.querySelectorAll('.release-lead-btn').forEach(btn => btn.style.display = 'none');
-                renderIncomingBanner(); // a pending transfer may now be free to show
-            } catch (err) {
-                alert("Couldn't release this lead: " + err.message);
-            }
-        }
-        window.handleReleaseLead = handleReleaseLead;
 
         // Real-time listener for live transfers — same onSnapshot pattern the
         // leaderboard already uses. No-ops safely if the banner element isn't
