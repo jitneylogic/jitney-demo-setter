@@ -409,6 +409,7 @@
         <h2>Call Flow & Scripting</h2>
 
         <button type="button" class="btn-primary btn-transaction" id="btn-next-lead-script" onclick="handleClaimNextLead()">Next Available Lead</button>
+        <button type="button" class="btn-copy-action release-lead-btn" style="display:none; width:100%; margin-top:8px; padding:9px; text-align:center;" onclick="handleReleaseLead()">Release Lead Back to Queue</button>
         <div id="next-lead-status-script" style="font-size:12px; color: var(--sp-text-dim); margin: 6px 0 20px; min-height:16px;"></div>
 
         <div class="script-field-wrapper">
@@ -686,6 +687,7 @@
             <h2>Customer Record</h2>
             <div class="form-section">
                 <button type="button" class="btn-primary btn-transaction" id="btn-next-lead" onclick="handleClaimNextLead()">Next Available Lead</button>
+                <button type="button" class="btn-copy-action release-lead-btn" style="display:none; width:100%; margin-top:8px; padding:9px; text-align:center;" onclick="handleReleaseLead()">Release Lead Back to Queue</button>
                 <div id="next-lead-status" style="font-size:12px; color: var(--color-mint-soft); margin: 6px 0 16px; min-height:16px;"></div>
 
                 <div class="grid-2">
@@ -1018,6 +1020,9 @@
         // the way the rest of the cockpit already works, rather than
         // writing to one side and leaving the other stale.
         function populateCockpitFromLead(lead) {
+            window.currentActiveLeadId = lead.id;
+            document.querySelectorAll('.release-lead-btn').forEach(btn => btn.style.display = 'inline-block');
+
             const nameParts = (lead.customerName || '').trim().split(/\s+/);
             const firstName = nameParts.shift() || '';
             const lastName = nameParts.join(' ');
@@ -1034,6 +1039,22 @@
 
             if (lead.notes) syncNotesText(lead.notes); // updates both panes at once
         }
+
+        // Wrong number, no answer, etc — let the closer hand this lead back
+        // to the queue instead of being stuck holding it (which would also
+        // block them from claiming anything else, per the busy-guard above).
+        async function handleReleaseLead() {
+            if (!window.currentActiveLeadId) return;
+            if (!confirm("Release this lead back to the queue? It'll go to whoever's next, including possibly you again.")) return;
+            try {
+                await fireReleaseLead(window.currentActiveLeadId);
+                window.currentActiveLeadId = null;
+                document.querySelectorAll('.release-lead-btn').forEach(btn => btn.style.display = 'none');
+            } catch (err) {
+                alert("Couldn't release this lead: " + err.message);
+            }
+        }
+        window.handleReleaseLead = handleReleaseLead;
 
         // Real-time listener for live transfers — same onSnapshot pattern the
         // leaderboard already uses. No-ops safely if the banner element isn't
