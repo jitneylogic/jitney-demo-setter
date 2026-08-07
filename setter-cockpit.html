@@ -59,7 +59,17 @@
     /* Single centered column — the real cockpit's two-pane split doesn't
        apply here (no script/negotiation side to mirror), but the card and
        form treatment inside it is the same #input-pane styling. */
-    #setter-pane { max-width: 640px; margin: 0 auto; padding: 40px 24px 24px; }
+    /* The shared engine's evaluateAuthGateState() sets #app-content's
+       display to "flex" via inline JS (built for the closer cockpit's
+       side-by-side two-pane layout). This page has one column, not two
+       panes, so it needs flex-direction explicitly set to column here —
+       without this, the two children (the form and the footer bar) lay
+       out as a row instead of stacking, which is the exact bug from the
+       screenshot. The JS only ever touches `display`, never
+       flex-direction, so this rule isn't fighting anything. */
+    #app-content { flex-direction: column; align-items: center; }
+
+    #setter-pane { max-width: 640px; margin: 0 auto; padding: 40px 24px 24px; width: 100%; }
 
     .form-section {
         background: var(--color-box-translucent); padding: 24px;
@@ -120,7 +130,7 @@
        layout as the real cockpit's footer, just without the "Hide Script
        Pane" button, which has no equivalent here. */
     .theme-toggle-wrapper {
-        max-width: 640px; margin: 0 auto; padding: 20px 24px 40px;
+        max-width: 640px; width: 100%; margin: 0 auto; padding: 20px 24px 40px;
         border-top: 1px solid rgba(255,255,255,0.1);
         display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
     }
