@@ -1460,6 +1460,25 @@ async function fireListZips() {
 }
 window.fireListZips = fireListZips;
 
+// EXEC ADMIN — end-of-day export + clear for the callback queue. See the
+// backend function's comment for why this is the deliberate exception to
+// the no-PII-retention rule everywhere else in this system.
+async function fireExportAndClearQueue() {
+    const config = getConfig();
+    const authHeader = await getAuthHeader();
+    const resp = await fetch(config.leadsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify({ action: "export_and_clear_queue", clientId: config.clientId })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.status !== "success") {
+        throw new Error(data.message || "Couldn't export and clear the queue.");
+    }
+    return data; // { leads, cleared }
+}
+window.fireExportAndClearQueue = fireExportAndClearQueue;
+
 window.fireCompleteLead = fireCompleteLead;
 
 // CLOSER SIDE — release a claimed lead back to the queue without
