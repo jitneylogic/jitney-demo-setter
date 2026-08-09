@@ -965,12 +965,30 @@ function renderLeaderboard(dailyStatsDoc) {
 
 let latestDailyStatsDoc = null;
 let latestWeeklyStatsDoc = null;
+let latestMonthlyStatsDoc = null;
+let officeLeaderboardTimeframe = 'daily';
 
 function refreshCommissionDisplay() {
     if (latestDailyStatsDoc !== null) renderPersonalStats('day', latestDailyStatsDoc);
     if (latestWeeklyStatsDoc !== null) renderPersonalStats('week', latestWeeklyStatsDoc);
 }
 window.refreshCommissionDisplay = refreshCommissionDisplay;
+
+// Which cached doc actually feeds the leaderboard is independent of
+// which one feeds personal commission stats above — a rep might want to
+// see this month's office leaderboard while their own commission display
+// stays on today, so these are two separate concerns sharing the same
+// three listeners.
+function setOfficeLeaderboardTimeframe(timeframe) {
+    officeLeaderboardTimeframe = timeframe;
+    const labels = { daily: 'Day', weekly: 'Week', monthly: 'Month' };
+    document.querySelectorAll('#toggle-office-leaderboard button').forEach(btn => {
+        btn.classList.toggle('active', btn.innerText === labels[timeframe]);
+    });
+    const docs = { daily: latestDailyStatsDoc, weekly: latestWeeklyStatsDoc, monthly: latestMonthlyStatsDoc };
+    renderLeaderboard(docs[timeframe]);
+}
+window.setOfficeLeaderboardTimeframe = setOfficeLeaderboardTimeframe;
 
 function initLiveLeaderboard() {
     const config = getConfig();
@@ -988,19 +1006,25 @@ function initLiveLeaderboard() {
     }
     const db = firebase.firestore();
     const clientRef = db.collection('clients').doc(config.clientId);
-    const { daily, weekly } = dateKeysForToday();
+    const { daily, weekly, monthly } = dateKeysForToday();
 
     clientRef.collection('daily_stats').doc(daily).onSnapshot(doc => {
         const data = doc.data();
         latestDailyStatsDoc = data;
         renderPersonalStats('day', data);
-        renderLeaderboard(data);
+        if (officeLeaderboardTimeframe === 'daily') renderLeaderboard(data);
     }, err => console.error("Daily stats listener error:", err));
 
     clientRef.collection('weekly_stats').doc(weekly).onSnapshot(doc => {
         latestWeeklyStatsDoc = doc.data();
         renderPersonalStats('week', latestWeeklyStatsDoc);
+        if (officeLeaderboardTimeframe === 'weekly') renderLeaderboard(latestWeeklyStatsDoc);
     }, err => console.error("Weekly stats listener error:", err));
+
+    clientRef.collection('monthly_stats').doc(monthly).onSnapshot(doc => {
+        latestMonthlyStatsDoc = doc.data();
+        if (officeLeaderboardTimeframe === 'monthly') renderLeaderboard(latestMonthlyStatsDoc);
+    }, err => console.error("Monthly stats listener error:", err));
 }
 window.initLiveLeaderboard = initLiveLeaderboard;
 
@@ -1567,6 +1591,76 @@ async function fireExportAndClearQueue() {
     return data; // { leads, cleared }
 }
 window.fireExportAndClearQueue = fireExportAndClearQueue;
+
+async function fireRecomputeMonthlyStats() {
+    const config = getConfig();
+    const authHeader = await getAuthHeader();
+    const resp = await fetch(config.leadsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify({ action: "recompute_monthly_stats", clientId: config.clientId })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.status !== "success") throw new Error(data.message || "Couldn't recompute monthly stats.");
+    return data;
+}
+window.fireRecomputeMonthlyStats = fireRecomputeMonthlyStats;
+
+async function fireListRepsWithTeams() {
+    const config = getConfig();
+    const authHeader = await getAuthHeader();
+    const resp = await fetch(config.leadsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify({ action: "list_reps_with_teams", clientId: config.clientId })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.status !== "success") throw new Error(data.message || "Couldn't list reps.");
+    return data.reps;
+}
+window.fireListRepsWithTeams = fireListRepsWithTeams;
+
+async function fireBulkSetTeams(assignments) {
+    const config = getConfig();
+    const authHeader = await getAuthHeader();
+    const resp = await fetch(config.leadsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify({ action: "bulk_set_teams", clientId: config.clientId, assignments })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.status !== "success") throw new Error(data.message || "Couldn't update team assignments.");
+    return data;
+}
+window.fireBulkSetTeams = fireBulkSetTeams;
+
+// Pure client-side grouping — combines whatever stats doc is already
+// being rendered (daily/weekly/monthly, all already have rep_breakdown
+// with real per-rep numbers) with the rep_teams mapping, at render time.
+// No new backend aggregation needed: team totals are just a sum of
+// numbers that already exist, grouped a different way.
+function groupStatsByTeam(statsDoc, teamMap) {
+    const repBreakdown = (statsDoc && statsDoc.rep_breakdown) || {};
+    const teamTotals = {};
+    Object.entries(repBreakdown).forEach(([repId, rep]) => {
+        const team = teamMap[repId] || "Unassigned";
+        if (!teamTotals[team]) teamTotals[team] = { calls_taken: 0, calls_sold: 0, revenue: 0 };
+        teamTotals[team].calls_taken += rep.calls_taken || 0;
+        teamTotals[team].calls_sold += rep.calls_sold || 0;
+        teamTotals[team].revenue += rep.revenue || 0;
+    });
+    return Object.entries(teamTotals)
+        .map(([team, data]) => ({
+            team,
+            callsTaken: data.calls_taken,
+            callsSold: data.calls_sold,
+            revenue: data.revenue,
+            rate: data.calls_taken > 0 ? (data.calls_sold / data.calls_taken) * 100 : 0,
+            rpc: data.calls_taken > 0 ? data.revenue / data.calls_taken : 0
+        }))
+        .sort((a, b) => b.revenue - a.revenue);
+}
+window.groupStatsByTeam = groupStatsByTeam;
 
 window.fireCompleteLead = fireCompleteLead;
 
