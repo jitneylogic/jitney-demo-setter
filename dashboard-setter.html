@@ -329,6 +329,10 @@
             <div class="dept-card-header">Department Standings: Today</div>
             <div class="horizontal-stats-container">
                 <div class="stat-col">
+                    <span class="stat-label">Callback Queue</span>
+                    <span class="stat-val" id="callback-queue-count-dashboard">0</span>
+                </div>
+                <div class="stat-col">
                     <span class="stat-label">Calls Taken</span>
                     <span class="stat-val" id="global-today-calls">142</span>
                 </div>
@@ -400,26 +404,24 @@
                 </div>
             </div>
         </div>
-        <div class="dept-card" style="flex: 0 0 220px;">
-            <div class="dept-card-header">Callback Queue</div>
-            <div class="horizontal-stats-container">
-                <div class="stat-col revenue-focus">
-                    <span class="stat-label">Leads Waiting</span>
-                    <span class="stat-val" id="callback-queue-count-dashboard">0</span>
-                </div>
-            </div>
-        </div>
     </div>
 
     <div class="leaderboards-container">
         
         <div class="timeframe-block">
-            <div class="timeframe-title">Intraday Team Pacing <span id="intraday-team-date" style="margin-left: 6px; font-weight: 600; color: var(--color-secondary);"></span></div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="timeframe-title">Intraday Team Pacing <span id="intraday-team-date" style="margin-left: 6px; font-weight: 600; color: var(--color-secondary);"></span></div>
+                <div class="theme-toggle" id="toggle-team-pacing">
+                    <button type="button" class="active" onclick="setTeamPacingTimeframe('daily')">Day</button>
+                    <button type="button" onclick="setTeamPacingTimeframe('weekly')">Week</button>
+                    <button type="button" onclick="setTeamPacingTimeframe('monthly')">Month</button>
+                </div>
+            </div>
             <div class="leaderboard-table-wrapper">
                 <table class="leaderboard-table" id="team-table">
                     <thead>
                         <tr>
-                            <th style="width: 20%;">Squad</th>
+                            <th style="width: 20%;">Team</th>
                             <th style="width: 12%;">Calls</th>
                             <th style="width: 12%;">Closed</th>
                             <th style="width: 14%;">Rate</th>
@@ -427,47 +429,16 @@
                             <th style="width: 18%;">RPC</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr class="rank-row-1" id="team-rank-1">
-                            <td><span class="rank-badge">1</span>Vanguard</td>
-                            <td class="monospaced-cell">45</td>
-                            <td class="monospaced-cell">15</td>
-                            <td class="monospaced-cell">33.3%</td>
-                            <td class="monospaced-cell money-cell">$9,150.00</td>
-                            <td class="monospaced-cell">$203.33</td>
-                        </tr>
-                        <tr class="rank-row-2 team-highlight-row" id="team-rank-user">
-                            <td><span class="rank-badge">2</span>Apex</td>
-                            <td class="monospaced-cell" id="team-calls">38</td>
-                            <td class="monospaced-cell" id="team-closed">11</td>
-                            <td class="monospaced-cell" id="team-rate">28.9%</td>
-                            <td class="monospaced-cell money-cell" id="team-rev">$6,450.00</td>
-                            <td class="monospaced-cell" id="team-rpc">$169.73</td>
-                        </tr>
-                        <tr id="team-rank-3">
-                            <td><span class="rank-badge">3</span>Nova</td>
-                            <td class="monospaced-cell">35</td>
-                            <td class="monospaced-cell">8</td>
-                            <td class="monospaced-cell">22.8%</td>
-                            <td class="monospaced-cell money-cell">$4,800.50</td>
-                            <td class="monospaced-cell">$137.15</td>
-                        </tr>
-                        <tr id="team-rank-4">
-                            <td><span class="rank-badge">4</span>Titan</td>
-                            <td class="monospaced-cell">24</td>
-                            <td class="monospaced-cell">7</td>
-                            <td class="monospaced-cell">29.1%</td>
-                            <td class="monospaced-cell money-cell">$3,949.70</td>
-                            <td class="monospaced-cell">$164.57</td>
-                        </tr>
+                    <tbody id="team-table-tbody">
+                        <tr><td colspan="6" style="text-align:center; opacity:0.6; padding: 30px;">Waiting for today's activity...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
         <div class="timeframe-block">
-            <div class="timeframe-title" style="display:flex; justify-content:space-between; align-items:center;">
-                <span>Individual Closer Standings</span>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="timeframe-title">Individual Closer Standings</div>
                 <div class="theme-toggle" id="toggle-closer-standings">
                     <button type="button" class="active" onclick="setCloserStandingsTimeframe('daily')">Day</button>
                     <button type="button" onclick="setCloserStandingsTimeframe('weekly')">Week</button>
@@ -518,8 +489,8 @@
 
         <div class="leaderboards-container">
             <div class="timeframe-block">
-                <div class="timeframe-title" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span>Unqualified Reasons</span>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="timeframe-title">Unqualified Reasons</div>
                     <div class="theme-toggle" id="toggle-reasons">
                         <button type="button" class="active" onclick="setSetterViewTimeframe('reasons', 'daily')">Day</button>
                         <button type="button" onclick="setSetterViewTimeframe('reasons', 'weekly')">Week</button>
@@ -530,8 +501,8 @@
             </div>
 
             <div class="timeframe-block">
-                <div class="timeframe-title" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span>Per-Setter Breakdown</span>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="timeframe-title">Per-Setter Breakdown</div>
                     <div class="theme-toggle" id="toggle-per-setter">
                         <button type="button" class="active" onclick="setSetterViewTimeframe('table', 'daily')">Day</button>
                         <button type="button" onclick="setSetterViewTimeframe('table', 'weekly')">Week</button>
@@ -566,7 +537,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=8"></script>
+    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=10"></script>
     <script>
         window.JITNEYLOGIC_CONFIG = {
           clientId: "demo-pest-co",
@@ -624,9 +595,44 @@
         // arrives for whichever timeframe is currently selected — same
         // "don't flash unselected data" reasoning as the setter view.
         let closerStandingsTimeframe = 'daily';
+        let teamPacingTimeframe = 'daily';
+        window.repTeamMap = {}; // repId -> team, fetched once below
+
         window.onDeptStatsUpdated = function (timeframe, data) {
             if (timeframe === closerStandingsTimeframe) renderRepStandingsTable(data);
+            if (timeframe === teamPacingTimeframe) renderTeamTable(data);
         };
+
+        function renderTeamTable(data) {
+            const tbody = document.getElementById('team-table-tbody');
+            if (!tbody) return;
+            const rows = groupStatsByTeam(data, window.repTeamMap);
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; opacity:0.6; padding: 30px;">Waiting for today\'s activity...</td></tr>';
+                return;
+            }
+            tbody.innerHTML = rows.map((row, index) => {
+                const rankClass = index === 0 ? 'rank-row-1' : (index === 1 ? 'rank-row-2' : '');
+                return `<tr class="${rankClass}">
+                    <td><span class="rank-badge">${index + 1}</span>${row.team}</td>
+                    <td class="monospaced-cell">${row.callsTaken}</td>
+                    <td class="monospaced-cell">${row.callsSold}</td>
+                    <td class="monospaced-cell">${row.rate.toFixed(1)}%</td>
+                    <td class="monospaced-cell money-cell">$${row.revenue.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                    <td class="monospaced-cell">$${row.rpc.toFixed(2)}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function setTeamPacingTimeframe(timeframe) {
+            teamPacingTimeframe = timeframe;
+            const labels = { daily: 'Day', weekly: 'Week', monthly: 'Month' };
+            document.querySelectorAll('#toggle-team-pacing button').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText === labels[timeframe]);
+            });
+            renderTeamTable(window.latestDeptStats && window.latestDeptStats[timeframe]);
+        }
+        window.setTeamPacingTimeframe = setTeamPacingTimeframe;
 
         function setCloserStandingsTimeframe(timeframe) {
             closerStandingsTimeframe = timeframe;
@@ -767,6 +773,20 @@
         });
 
         initExecutiveDashboard();
+
+        // Live listener, not a one-time fetch — if a team assignment changes
+        // while the dashboard's already open (e.g. cast on a TV all day),
+        // it should pick that up without needing a page reload.
+        (function initTeamMapListener() {
+            const config = getConfig();
+            if (!firebase.apps.length) firebase.initializeApp(config.firebaseConfig);
+            firebase.firestore().collection('clients').doc(config.clientId).collection('rep_teams')
+                .onSnapshot(snap => {
+                    window.repTeamMap = {};
+                    snap.docs.forEach(doc => { window.repTeamMap[doc.id] = doc.data().team || ''; });
+                    renderTeamTable(window.latestDeptStats && window.latestDeptStats[teamPacingTimeframe]);
+                }, err => console.error('rep_teams listener error:', err.message));
+        })();
 
         // Same shared counter function the closer cockpit uses — one
         // definition in the engine, not duplicated logic here. Has to run
