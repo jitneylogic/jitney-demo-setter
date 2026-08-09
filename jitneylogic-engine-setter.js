@@ -1210,6 +1210,7 @@ async function fireSubmitLead(leadData, transferType) {
         pestTypes: leadData.pestTypes || [],
         notes: leadData.notes || "",
         qualified: typeof leadData.qualified === "boolean" ? leadData.qualified : null,
+        unqualifiedReason: leadData.unqualifiedReason || null,
         setterId: getRepId(),
         setterName: getRepName()
     };
