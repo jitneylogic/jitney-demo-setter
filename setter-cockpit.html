@@ -256,16 +256,27 @@
                 <textarea id="setter-notes" placeholder="Anything the closer should know before picking up"></textarea>
             </div>
 
-            <div class="form-group">
-                <label>Qualified?</label>
-                <div class="qual-toggle">
-                    <button type="button" id="btn-qualified" onclick="setQualified(true)">Qualified</button>
-                    <button type="button" id="btn-unqualified" onclick="setQualified(false)">Unqualified</button>
-                </div>
+            <div id="qualified-buttons" style="display:flex; gap:10px;">
+                <button type="button" class="btn-primary btn-transaction" id="btn-live-transfer" onclick="handleQualifiedSubmit('live')" style="flex:1;">Live Transfer</button>
+                <button type="button" class="btn-primary btn-transaction" id="btn-callback-queue" onclick="handleQualifiedSubmit('queue')" style="flex:1;">Callback Queue</button>
             </div>
 
-            <button type="button" class="btn-primary btn-transaction" id="btn-live-transfer" onclick="handleLiveTransfer()">Live Transfer</button>
-            <button type="button" class="btn-secondary" id="btn-send-queue" onclick="handleSendToQueue()">Send to Queue</button>
+            <div class="form-group" style="margin-top:18px;">
+                <label>Unqualified Reason</label>
+                <select id="unqualified-reason-select" onchange="handleUnqualifiedReasonChange()">
+                    <option value="">-- Select if not qualified --</option>
+                    <option value="Unqualified reason #1">Unqualified reason #1</option>
+                    <option value="Unqualified reason #2">Unqualified reason #2</option>
+                    <option value="Unqualified reason #3">Unqualified reason #3</option>
+                    <option value="Unqualified reason #4">Unqualified reason #4</option>
+                    <option value="Unqualified reason #5">Unqualified reason #5</option>
+                </select>
+            </div>
+
+            <button type="button" id="btn-unqualified-submit" onclick="handleUnqualifiedSubmit()"
+                style="display:none; width:100%; background:#b91c1c; color:#fff; border:none; padding:16px; font-size:15px; font-weight:700; border-radius:8px; cursor:pointer; text-transform:uppercase; letter-spacing:1px; margin-top:10px; font-family:inherit;">
+                Unqualified: Submit Call
+            </button>
             <div id="status-msg"></div>
         </div>
     </div>
@@ -289,7 +300,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAdT027lWYDDB6Ab58_h0JfvnehSt8UPF0&libraries=places&loading=async" async defer></script>
-<script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=2"></script>
+<script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=3"></script>
 <script>
     window.JITNEYLOGIC_CONFIG = {
         clientId: "demo-pest-co",
@@ -309,13 +320,6 @@
         // dialerWebhookUrl intentionally omitted until we know the client's
         // actual dialer — live transfers still work without it.
     };
-
-    let qualifiedState = null;
-    function setQualified(val) {
-        qualifiedState = val;
-        document.getElementById('btn-qualified').classList.toggle('active-qualified', val === true);
-        document.getElementById('btn-unqualified').classList.toggle('active-unqualified', val === false);
-    }
 
     // Setter-specific versions of the closer cockpit's dropdown pattern —
     // same look, but scoped to this page's own IDs and with no call to any
@@ -354,8 +358,7 @@
             customerPhone: document.getElementById('setter-customer-phone').value.trim(),
             address: document.getElementById('setter-address-input').value.trim(),
             pestTypes: Array.from(document.querySelectorAll('.setter-pest-cb:checked')).map(cb => cb.value),
-            notes: document.getElementById('setter-notes').value.trim(),
-            qualified: qualifiedState
+            notes: document.getElementById('setter-notes').value.trim()
         };
     }
 
@@ -366,27 +369,44 @@
         document.querySelectorAll('.setter-pest-cb').forEach(cb => cb.checked = false);
         updateSetterPestDisplayText();
         document.getElementById('setter-notes').value = '';
-        qualifiedState = null;
-        document.getElementById('btn-qualified').classList.remove('active-qualified');
-        document.getElementById('btn-unqualified').classList.remove('active-unqualified');
+        document.getElementById('unqualified-reason-select').value = '';
+        handleUnqualifiedReasonChange(); // resets the grey-out/hide state too
     }
 
     function setButtonsDisabled(disabled) {
         document.getElementById('btn-live-transfer').disabled = disabled;
-        document.getElementById('btn-send-queue').disabled = disabled;
+        document.getElementById('btn-callback-queue').disabled = disabled;
+        document.getElementById('btn-unqualified-submit').disabled = disabled;
     }
 
-    async function handleLiveTransfer() {
+    // A reason selected greys out the qualified-path buttons and reveals
+    // the red submit button — on purpose, so there's no accidental click
+    // sending a genuinely qualified call away, and no accidental submit
+    // of an unqualified call without a reason logged first.
+    function handleUnqualifiedReasonChange() {
+        const hasReason = !!document.getElementById('unqualified-reason-select').value;
+        document.getElementById('btn-live-transfer').style.opacity = hasReason ? '0.4' : '1';
+        document.getElementById('btn-live-transfer').disabled = hasReason;
+        document.getElementById('btn-callback-queue').style.opacity = hasReason ? '0.4' : '1';
+        document.getElementById('btn-callback-queue').disabled = hasReason;
+        document.getElementById('btn-unqualified-submit').style.display = hasReason ? 'block' : 'none';
+    }
+
+    // Live Transfer / Callback Queue — clicking either one submits
+    // immediately. Qualified is implied by which button was pressed; no
+    // separate toggle anymore.
+    async function handleQualifiedSubmit(transferType) {
         const lead = readLeadFromForm();
         if (!lead.customerName || !lead.customerPhone) {
-            showStatus("Name and phone are required before transferring.", true);
+            showStatus("Name and phone are required before submitting.", true);
             return;
         }
+        lead.qualified = true;
         setButtonsDisabled(true);
-        showStatus("Transferring — waiting for a closer to pick up...", false);
+        showStatus("Submitting...", false);
         try {
-            await fireSubmitLead(lead, "live");
-            showStatus("Sent — announced to all available closers.", false);
+            await fireSubmitLead(lead, transferType);
+            showStatus(transferType === "live" ? "Sent — live transfer queue." : "Sent — callback queue.", false);
             clearForm();
         } catch (err) {
             showStatus(err.message, true);
@@ -395,17 +415,24 @@
         }
     }
 
-    async function handleSendToQueue() {
+    async function handleUnqualifiedSubmit() {
         const lead = readLeadFromForm();
+        const reason = document.getElementById('unqualified-reason-select').value;
         if (!lead.customerName || !lead.customerPhone) {
-            showStatus("Name and phone are required before sending to the queue.", true);
+            showStatus("Name and phone are required before submitting.", true);
             return;
         }
+        if (!reason) {
+            showStatus("Select an unqualified reason first.", true);
+            return;
+        }
+        lead.qualified = false;
+        lead.unqualifiedReason = reason;
         setButtonsDisabled(true);
-        showStatus("Sending to queue...", false);
+        showStatus("Recording as unqualified...", false);
         try {
             await fireSubmitLead(lead, "queue");
-            showStatus("In the queue — next available closer will pick it up.", false);
+            showStatus("Recorded as unqualified — not sent to the closer queue.", false);
             clearForm();
         } catch (err) {
             showStatus(err.message, true);
