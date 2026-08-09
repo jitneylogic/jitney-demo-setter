@@ -1235,7 +1235,7 @@ async function fireSubmitLead(leadData, transferType) {
         }).catch(err => console.warn("Dialer webhook not reachable (non-blocking):", err.message));
     }
 
-    return data.leadId;
+    return { leadId: data.leadId, leadStatus: data.leadStatus };
 }
 window.fireSubmitLead = fireSubmitLead;
 
@@ -1349,6 +1349,49 @@ async function fireGetActiveLead() {
     }
 }
 window.fireGetActiveLead = fireGetActiveLead;
+
+// CLOSER SIDE — "Pull Lead." Searches both queues server-side by phone
+// number (see leads-service.js for why digits-only matching happens
+// there, not here). 409 with reason "already_active" is a real error to
+// show, not silence — same distinction as the other claim paths.
+async function firePullLead(phone) {
+    const config = getConfig();
+    if (!config.leadsUrl) throw new Error("Setup error: leadsUrl is not configured.");
+    const authHeader = await getAuthHeader();
+    const resp = await fetch(config.leadsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify({ action: "pull_lead", clientId: config.clientId, phone })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.status !== "success") {
+        throw new Error(data.message || "Couldn't pull a lead for that number.");
+    }
+    return data.lead;
+}
+window.firePullLead = firePullLead;
+
+// SHARED — live count of leads sitting in the callback queue
+// (status=="queued"). Used by both the closer cockpit (next to the Next
+// Available Lead button) and the executive dashboard. One listener
+// definition instead of duplicating the same Firestore query in two
+// files. Firestore rules already allow any authenticated rep at this
+// client to read the leads collection, so no rule changes needed for
+// this to work.
+function initCallbackQueueCounter(elementId) {
+    const config = getConfig();
+    const db = firebase.firestore();
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    db.collection("clients").doc(config.clientId).collection("leads")
+        .where("status", "==", "queued")
+        .onSnapshot(snap => {
+            el.innerText = snap.size;
+        }, err => {
+            console.error("Callback queue counter listener failed:", err.message);
+        });
+}
+window.initCallbackQueueCounter = initCallbackQueueCounter;
 
 window.fireCompleteLead = fireCompleteLead;
 
