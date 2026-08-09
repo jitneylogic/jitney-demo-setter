@@ -317,16 +317,9 @@
 
     <header>
         <h1>Executive Performance Dashboard</h1>
-        <div style="display:flex; align-items:center; gap:16px;">
-            <div class="theme-toggle" id="view-toggle">
-                <button type="button" id="view-btn-closer" onclick="setDashboardView('closer')">Closer View</button>
-                <button type="button" id="view-btn-setter" onclick="setDashboardView('setter')">Setter View</button>
-            </div>
-            <div class="theme-toggle">
-                <button type="button" id="theme-btn-green" onclick="setDashboardTheme('green')">Calming Green</button>
-                <button type="button" id="theme-btn-linen" onclick="setDashboardTheme('linen')">Clean Linen</button>
-                <button type="button" id="theme-btn-jazz" onclick="setDashboardTheme('jazz')">Executive Jazz</button>
-            </div>
+        <div class="theme-toggle" id="view-toggle">
+            <button type="button" id="view-btn-closer" onclick="setDashboardView('closer')">Closer View</button>
+            <button type="button" id="view-btn-setter" onclick="setDashboardView('setter')">Setter View</button>
         </div>
     </header>
 
@@ -379,6 +372,31 @@
                 <div class="stat-col revenue-focus">
                     <span class="stat-label">Total Revenue</span>
                     <span class="stat-val" id="global-week-rev">$0.00</span>
+                </div>
+            </div>
+        </div>
+        <div class="dept-card">
+            <div class="dept-card-header">Department Standings: This Month</div>
+            <div class="horizontal-stats-container">
+                <div class="stat-col">
+                    <span class="stat-label">Calls Taken</span>
+                    <span class="stat-val" id="global-month-calls">0</span>
+                </div>
+                <div class="stat-col">
+                    <span class="stat-label">Calls Closed</span>
+                    <span class="stat-val" id="global-month-closed">0</span>
+                </div>
+                <div class="stat-col">
+                    <span class="stat-label">Close Rate</span>
+                    <span class="stat-val" id="global-month-rate">0.0%</span>
+                </div>
+                <div class="stat-col">
+                    <span class="stat-label">RPC</span>
+                    <span class="stat-val" id="global-month-rpc">$0.00</span>
+                </div>
+                <div class="stat-col revenue-focus">
+                    <span class="stat-label">Total Revenue</span>
+                    <span class="stat-val" id="global-month-rev">$0.00</span>
                 </div>
             </div>
         </div>
@@ -448,7 +466,14 @@
         </div>
 
         <div class="timeframe-block">
-            <div class="timeframe-title">Individual Closer Standings</div>
+            <div class="timeframe-title" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Individual Closer Standings</span>
+                <div class="theme-toggle" id="toggle-closer-standings">
+                    <button type="button" class="active" onclick="setCloserStandingsTimeframe('daily')">Day</button>
+                    <button type="button" onclick="setCloserStandingsTimeframe('weekly')">Week</button>
+                    <button type="button" onclick="setCloserStandingsTimeframe('monthly')">Month</button>
+                </div>
+            </div>
             <div class="leaderboard-table-wrapper">
                 <table class="leaderboard-table">
                     <thead>
@@ -476,25 +501,43 @@
             <div class="dept-card">
                 <div class="dept-card-header">Leads Submitted</div>
                 <div class="horizontal-stats-container">
-                    <div class="stat-col revenue-focus"><span class="stat-val" id="setter-summary-submitted">0</span></div>
+                    <div class="stat-col"><span class="stat-label">Today</span><span class="stat-val" id="setter-summary-submitted-daily">0</span></div>
+                    <div class="stat-col"><span class="stat-label">This Week</span><span class="stat-val" id="setter-summary-submitted-weekly">0</span></div>
+                    <div class="stat-col revenue-focus"><span class="stat-label">This Month</span><span class="stat-val" id="setter-summary-submitted-monthly">0</span></div>
                 </div>
             </div>
             <div class="dept-card">
                 <div class="dept-card-header">Overall Qualified Rate</div>
                 <div class="horizontal-stats-container">
-                    <div class="stat-col revenue-focus"><span class="stat-val" id="setter-summary-qualified-rate">0.0%</span></div>
+                    <div class="stat-col"><span class="stat-label">Today</span><span class="stat-val" id="setter-summary-rate-daily">0.0%</span></div>
+                    <div class="stat-col"><span class="stat-label">This Week</span><span class="stat-val" id="setter-summary-rate-weekly">0.0%</span></div>
+                    <div class="stat-col revenue-focus"><span class="stat-label">This Month</span><span class="stat-val" id="setter-summary-rate-monthly">0.0%</span></div>
                 </div>
             </div>
         </div>
 
         <div class="leaderboards-container">
             <div class="timeframe-block">
-                <div class="timeframe-title">Unqualified Reasons</div>
+                <div class="timeframe-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Unqualified Reasons</span>
+                    <div class="theme-toggle" id="toggle-reasons">
+                        <button type="button" class="active" onclick="setSetterViewTimeframe('reasons', 'daily')">Day</button>
+                        <button type="button" onclick="setSetterViewTimeframe('reasons', 'weekly')">Week</button>
+                        <button type="button" onclick="setSetterViewTimeframe('reasons', 'monthly')">Month</button>
+                    </div>
+                </div>
                 <div id="reason-breakdown" style="padding: 10px 5px;"></div>
             </div>
 
             <div class="timeframe-block">
-                <div class="timeframe-title">Per-Setter Breakdown</div>
+                <div class="timeframe-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Per-Setter Breakdown</span>
+                    <div class="theme-toggle" id="toggle-per-setter">
+                        <button type="button" class="active" onclick="setSetterViewTimeframe('table', 'daily')">Day</button>
+                        <button type="button" onclick="setSetterViewTimeframe('table', 'weekly')">Week</button>
+                        <button type="button" onclick="setSetterViewTimeframe('table', 'monthly')">Month</button>
+                    </div>
+                </div>
                 <div class="leaderboard-table-wrapper">
                     <table class="leaderboard-table">
                         <thead>
@@ -515,9 +558,15 @@
         </div>
     </div><!-- /setter-view -->
 
+    <div class="theme-toggle" style="position:fixed; bottom:20px; right:20px; z-index:100;">
+        <button type="button" id="theme-btn-green" onclick="setDashboardTheme('green')">Calming Green</button>
+        <button type="button" id="theme-btn-linen" onclick="setDashboardTheme('linen')">Clean Linen</button>
+        <button type="button" id="theme-btn-jazz" onclick="setDashboardTheme('jazz')">Executive Jazz</button>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=5"></script>
+    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=8"></script>
     <script>
         window.JITNEYLOGIC_CONFIG = {
           clientId: "demo-pest-co",
@@ -571,32 +620,50 @@
         }
         window.setDashboardView = setDashboardView;
 
-        function renderSetterStats(data) {
-            const repBreakdown = (data && data.rep_breakdown) || {};
-            const setterIds = Object.keys(repBreakdown);
+        // Re-renders Individual Closer Standings if a background update
+        // arrives for whichever timeframe is currently selected — same
+        // "don't flash unselected data" reasoning as the setter view.
+        let closerStandingsTimeframe = 'daily';
+        window.onDeptStatsUpdated = function (timeframe, data) {
+            if (timeframe === closerStandingsTimeframe) renderRepStandingsTable(data);
+        };
 
-            let totalSubmitted = 0, totalQualified = 0;
+        function setCloserStandingsTimeframe(timeframe) {
+            closerStandingsTimeframe = timeframe;
+            const labels = { daily: 'Day', weekly: 'Week', monthly: 'Month' };
+            document.querySelectorAll('#toggle-closer-standings button').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText === labels[timeframe]);
+            });
+            const data = window.latestDeptStats && window.latestDeptStats[timeframe];
+            renderRepStandingsTable(data);
+        }
+        window.setCloserStandingsTimeframe = setCloserStandingsTimeframe;
+
+        function computeSetterSummary(data) {
+            const repBreakdown = (data && data.rep_breakdown) || {};
+            let submitted = 0, qualified = 0;
+            Object.values(repBreakdown).forEach(rep => {
+                submitted += rep.leads_submitted || 0;
+                qualified += rep.leads_qualified || 0;
+            });
+            const rate = submitted > 0 ? ((qualified / submitted) * 100).toFixed(1) : '0.0';
+            return { submitted, rate };
+        }
+
+        function renderReasonsBreakdown(data) {
+            const repBreakdown = (data && data.rep_breakdown) || {};
             const reasonTotals = {};
             let totalUnqualifiedCount = 0;
-
-            setterIds.forEach(id => {
-                const rep = repBreakdown[id];
-                totalSubmitted += rep.leads_submitted || 0;
-                totalQualified += rep.leads_qualified || 0;
+            Object.values(repBreakdown).forEach(rep => {
                 totalUnqualifiedCount += rep.leads_unqualified || 0;
                 const reasons = rep.unqualified_reasons || {};
                 Object.keys(reasons).forEach(reason => {
                     reasonTotals[reason] = (reasonTotals[reason] || 0) + reasons[reason];
                 });
             });
-
-            document.getElementById('setter-summary-submitted').innerText = totalSubmitted;
-            const qualifiedRate = totalSubmitted > 0 ? ((totalQualified / totalSubmitted) * 100).toFixed(1) : '0.0';
-            document.getElementById('setter-summary-qualified-rate').innerText = qualifiedRate + '%';
-
             // Percent of *unqualified* calls each reason accounts for — not
-            // percent of all calls, since the question this answers is
-            // "of the ones we lost, why," not "of everything, how often."
+            // percent of all calls, since the question this answers is "of
+            // the ones we lost, why," not "of everything, how often."
             const reasonEntries = Object.entries(reasonTotals).sort((a, b) => b[1] - a[1]);
             const reasonEl = document.getElementById('reason-breakdown');
             reasonEl.innerHTML = reasonEntries.length === 0
@@ -612,7 +679,11 @@
                         <div style="width:70px; text-align:right; font-weight:700;">${count} (${pct}%)</div>
                     </div>`;
                 }).join('');
+        }
 
+        function renderPerSetterTable(data) {
+            const repBreakdown = (data && data.rep_breakdown) || {};
+            const setterIds = Object.keys(repBreakdown);
             const tbody = document.getElementById('setter-table-body');
             if (setterIds.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; opacity:0.6; padding: 30px;">Waiting for activity...</td></tr>';
@@ -635,17 +706,54 @@
             }).join('');
         }
 
+        // Which timeframe each toggle-able section is currently showing —
+        // independent of each other, since a user might want Day on
+        // Reasons and Month on the table at the same time.
+        let setterViewTimeframes = { reasons: 'daily', table: 'daily' };
+
+        function setSetterViewTimeframe(section, timeframe) {
+            setterViewTimeframes[section] = timeframe;
+            const toggleId = section === 'reasons' ? 'toggle-reasons' : 'toggle-per-setter';
+            const labels = { daily: 'Day', weekly: 'Week', monthly: 'Month' };
+            document.querySelectorAll(`#${toggleId} button`).forEach(btn => {
+                btn.classList.toggle('active', btn.innerText === labels[timeframe]);
+            });
+            const data = window.latestSetterStats && window.latestSetterStats[timeframe];
+            if (section === 'reasons') renderReasonsBreakdown(data);
+            else renderPerSetterTable(data);
+        }
+        window.setSetterViewTimeframe = setSetterViewTimeframe;
+
         function startSetterStatsListener() {
             const config = getConfig();
             const db = firebase.firestore();
-            const { daily } = dateKeysForToday();
-            // Today only for now, matching the main dashboard's "Today" card
-            // — a This-Week toggle for this view is a fast follow, not
-            // built in this pass.
-            db.collection('clients').doc(config.clientId).collection('setter_daily_stats').doc(daily)
-                .onSnapshot(doc => {
-                    renderSetterStats(doc.exists ? doc.data() : null);
-                }, err => console.error('Setter stats listener error:', err.message));
+            const { daily, weekly, monthly } = dateKeysForToday();
+            window.latestSetterStats = window.latestSetterStats || { daily: null, weekly: null, monthly: null };
+
+            const collections = { daily: 'setter_daily_stats', weekly: 'setter_weekly_stats', monthly: 'setter_monthly_stats' };
+            Object.entries(collections).forEach(([timeframe, collection]) => {
+                db.collection('clients').doc(config.clientId).collection(collection).doc({ daily, weekly, monthly }[timeframe])
+                    .onSnapshot(doc => {
+                        const data = doc.exists ? doc.data() : null;
+                        window.latestSetterStats[timeframe] = data;
+
+                        // Summary boxes always show all three at once — no
+                        // toggle, so every update refreshes its own pair of
+                        // numbers regardless of what the two toggles below
+                        // are currently set to.
+                        const summary = computeSetterSummary(data);
+                        document.getElementById(`setter-summary-submitted-${timeframe}`).innerText = summary.submitted;
+                        document.getElementById(`setter-summary-rate-${timeframe}`).innerText = summary.rate + '%';
+
+                        // Only re-render the toggle-able sections if this
+                        // timeframe's update matches what that section is
+                        // currently showing — otherwise a background update
+                        // to an unselected timeframe would flash content the
+                        // user didn't ask to see.
+                        if (setterViewTimeframes.reasons === timeframe) renderReasonsBreakdown(data);
+                        if (setterViewTimeframes.table === timeframe) renderPerSetterTable(data);
+                    }, err => console.error(`Setter ${timeframe} stats listener error:`, err.message));
+            });
         }
 
         window.addEventListener('DOMContentLoaded', () => {
