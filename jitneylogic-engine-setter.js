@@ -110,7 +110,7 @@ function runDynamicGuardrails() {
     if (!currentTier) return clearDropdowns();
 
     if (currentTier === currentVaultPackage && currentVaultPricing) {
-        renderPriceDropdowns(currentVaultPricing);
+        renderPriceDropdowns(applySqftAdjustment(currentVaultPricing, currentSqftTier));
         return;
     }
 
@@ -121,9 +121,63 @@ function runDynamicGuardrails() {
         if (!data) return clearDropdowns();
         currentVaultPackage = currentTier;
         currentVaultPricing = data.pricing;
-        renderPriceDropdowns(currentVaultPricing);
+        renderPriceDropdowns(applySqftAdjustment(currentVaultPricing, currentSqftTier));
     });
 }
+
+// =========================================================================
+// SQUARE FOOTAGE PRICING ADJUSTMENT — flat add-on applied on top of
+// whatever the vault already quoted, never a second vault call. Kept
+// simple on purpose ("until we have an actual pricing matrix with a real
+// client" — Tyler's words): a flat dollar amount per tier, added equally
+// to start/target/floor, not a percentage or a formula. currentVaultPricing
+// itself is never mutated — this always returns a fresh adjusted copy, so
+// switching sqft tiers back and forth never compounds or drifts.
+// =========================================================================
+let currentSqftTier = ""; // "", "0-3000", "3001-5000", or "5001+"
+
+const SQFT_SURCHARGES = {
+    "0-3000": { initial: 0, monthly: 0 },
+    "3001-5000": { initial: 100, monthly: 50 },
+    "5001+": { initial: 150, monthly: 75 } // open-ended on purpose — no fourth tier exists yet
+};
+
+function applySqftAdjustment(basePricing, tier) {
+    const surcharge = SQFT_SURCHARGES[tier] || { initial: 0, monthly: 0 };
+    if (!basePricing) return basePricing;
+    return {
+        initial: {
+            starting: basePricing.initial.starting + surcharge.initial,
+            target: basePricing.initial.target + surcharge.initial,
+            floor: basePricing.initial.floor + surcharge.initial
+        },
+        monthly: {
+            starting: basePricing.monthly.starting + surcharge.monthly,
+            target: basePricing.monthly.target + surcharge.monthly,
+            floor: basePricing.monthly.floor + surcharge.monthly
+        }
+    };
+}
+
+function syncSqft(value) {
+    const a = document.getElementById('sqft-select');
+    const b = document.getElementById('sqft-select-script');
+    if (a) a.value = value;
+    if (b) b.value = value;
+}
+window.syncSqft = syncSqft;
+
+function handleSqftChange(value) {
+    currentSqftTier = value;
+    syncSqft(value);
+    if (currentVaultPricing) renderPriceDropdowns(applySqftAdjustment(currentVaultPricing, currentSqftTier));
+}
+window.handleSqftChange = handleSqftChange;
+
+window.resetSqftState = function () {
+    currentSqftTier = "";
+    syncSqft("");
+};
 
 function renderPriceDropdowns(pricing) {
     const initialDropdown = document.getElementById('initial-price');
@@ -589,7 +643,12 @@ async function fireCreateCustomer() {
             throw new Error(data.message || "Ardenus returned an error.");
         }
 
-        document.getElementById('account-number').value = data.fieldroutes_account_number;
+        // account-number field was removed from the UI (replaced with the
+        // square footage dropdown) — window.currentFieldroutesAccountNumber
+        // right below is the real source of truth other code reads from,
+        // this was always just a visible mirror of it.
+        const accountNumberEl = document.getElementById('account-number');
+        if (accountNumberEl) accountNumberEl.value = data.fieldroutes_account_number;
         window.currentFieldroutesAccountNumber = data.fieldroutes_account_number;
         statusEl.style.color = "#4ade80";
         statusEl.innerText = "Customer created — Account #" + data.fieldroutes_account_number;
@@ -1078,7 +1137,14 @@ async function fireRevenuePipelineTracking(event) {
 
     const clientFirst = document.getElementById('first-name').value.trim() || "Unknown";
     const clientLast = document.getElementById('last-name').value.trim() || "Client";
-    const clientAccount = document.getElementById('account-number').value.trim() || "N/A";
+    // account-number field was removed from the UI (replaced with square
+    // footage) — this used to read the account number from that field, but
+    // window.currentFieldroutesAccountNumber is the real source of truth
+    // (set directly wherever FieldRoutes actually returns one), so read
+    // from there instead of a DOM element that no longer exists. This was
+    // a real bug: reading .value off a null element would have thrown on
+    // every single call submission, not just ones involving this field.
+    const clientAccount = window.currentFieldroutesAccountNumber || "N/A";
 
     if (!window.currentCallId) {
         window.currentCallId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
@@ -1168,12 +1234,16 @@ async function fireRevenuePipelineTracking(event) {
     syncPhoneValue("");
     syncAddressValue("");
     currentAddressComponents = null;
-    document.getElementById('account-number').value = "";
+    const accountNumberElReset = document.getElementById('account-number');
+    if (accountNumberElReset) accountNumberElReset.value = ""; // element removed from UI, kept null-safe in case it's ever reintroduced
     document.getElementById('create-customer-status').innerText = "";
     window.currentCallId = null;
     window.currentFieldroutesAccountNumber = null;
     window.currentActiveLeadId = null;
     document.querySelectorAll('.setter-notes-box').forEach(box => box.style.display = 'none');
+    document.querySelectorAll('.inject-setter-name').forEach(el => { el.innerText = 'your setter'; });
+    document.querySelectorAll('.inject-pest-list').forEach(el => { el.innerText = 'some pest issues'; });
+    if (window.resetSqftState) window.resetSqftState(); // optional hook, guarded — defined per-file where the sqft dropdown exists
     document.querySelectorAll('#next-lead-status, #next-lead-status-script').forEach(el => el.innerText = '');
     if (window.renderIncomingBanner) window.renderIncomingBanner(); // a pending transfer may now be free to show
     syncScheduleDetails();
