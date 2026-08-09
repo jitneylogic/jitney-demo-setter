@@ -316,6 +316,17 @@
                 "record stats";
             gap: 24px;
             align-items: start;
+            /* Without this, when .record-col (spanning both rows) needs
+               more total height than .agreement-col + .bottom-stats-wrap
+               naturally do — exactly what happened once Pull Lead, the
+               shrunk Next Available Lead row, and the notes box were all
+               added — the grid stretches the two row tracks apart to fill
+               that extra height, opening a gap between them instead of
+               packing them tight at the top. align-content:start tells the
+               grid to pack its row tracks at the top and leave any leftover
+               height at the bottom (next to the shorter column), not
+               distributed between rows. */
+            align-content: start;
         }
         body.hide-script-pane .agreement-col { grid-area: agreement; }
         body.hide-script-pane .record-col { grid-area: record; }
