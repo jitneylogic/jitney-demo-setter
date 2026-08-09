@@ -409,11 +409,11 @@
         <h2>Call Flow & Scripting</h2>
 
         <div style="display:flex; gap:8px;">
-            <input type="tel" id="pull-lead-phone-script" placeholder="Paste number off the dialer..." style="flex:1;">
+            <input type="tel" id="pull-lead-phone-script" placeholder="Paste number off the dialer..." style="flex:1;" oninput="handlePullLeadPhoneInput()">
             <button type="button" class="btn-primary btn-transaction" id="btn-pull-lead-script" onclick="handlePullLead()" style="width:auto; padding-left:20px; padding-right:20px; margin-top:0;">Pull Lead</button>
         </div>
-        <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
-            <button type="button" class="btn-primary btn-transaction" id="btn-next-lead-script" onclick="handleClaimNextLead()" style="flex:1; margin-top:0;">Next Available Lead</button>
+        <div style="display:flex; align-items:center; gap:16px; margin-top:24px;">
+            <button type="button" class="btn-primary btn-transaction" id="btn-next-lead-script" onclick="handleClaimNextLead()" style="flex: 0 0 38%; margin-top:0;">Next Available Lead</button>
             <div style="text-align:center; min-width:56px;">
                 <div id="callback-queue-count-script" style="font-size:20px; font-weight:800; color: var(--color-sage-accent); line-height:1;">0</div>
                 <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.5px; color: var(--sp-text-dim);">Waiting</div>
@@ -701,11 +701,11 @@
             <h2>Customer Record</h2>
             <div class="form-section">
                 <div style="display:flex; gap:8px;">
-                    <input type="tel" id="pull-lead-phone" placeholder="Paste number off the dialer..." style="flex:1;">
+                    <input type="tel" id="pull-lead-phone" placeholder="Paste number off the dialer..." style="flex:1;" oninput="handlePullLeadPhoneInput()">
                     <button type="button" class="btn-primary btn-transaction" id="btn-pull-lead" onclick="handlePullLead()" style="width:auto; padding-left:20px; padding-right:20px; margin-top:0;">Pull Lead</button>
                 </div>
-                <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
-                    <button type="button" class="btn-primary btn-transaction" id="btn-next-lead" onclick="handleClaimNextLead()" style="flex:1; margin-top:0;">Next Available Lead</button>
+                <div style="display:flex; align-items:center; gap:16px; margin-top:24px;">
+                    <button type="button" class="btn-primary btn-transaction" id="btn-next-lead" onclick="handleClaimNextLead()" style="flex: 0 0 38%; margin-top:0;">Next Available Lead</button>
                     <div style="text-align:center; min-width:56px;">
                         <div id="callback-queue-count" style="font-size:20px; font-weight:800; color: var(--color-sage-accent); line-height:1;">0</div>
                         <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.5px; color: var(--color-mint-soft);">Waiting</div>
@@ -874,7 +874,7 @@
         </div>
     </div>
 
-    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=3"></script>
+    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=4"></script>
     <script>
         // =====================================================================
         // CLIENT CONFIG — the only block that should need to change when
@@ -1077,6 +1077,22 @@
         // queues server-side (live first, callback fallback) by whatever
         // digits are in the phone field — normalization happens in
         // leads-service.js, this just passes the raw text through.
+        // Greys out Next Available Lead the instant either phone field has
+        // text in it — reduces the misclick risk of reaching for one button
+        // while mid-typing into the other. Re-enables the moment both
+        // fields are empty again, including after a successful Pull Lead
+        // clears them.
+        function handlePullLeadPhoneInput() {
+            const phoneEls = [document.getElementById('pull-lead-phone'), document.getElementById('pull-lead-phone-script')];
+            const hasText = phoneEls.some(el => el && el.value.trim());
+            const nextLeadButtons = [document.getElementById('btn-next-lead'), document.getElementById('btn-next-lead-script')];
+            nextLeadButtons.forEach(btn => {
+                if (!btn) return;
+                btn.disabled = hasText;
+                btn.style.opacity = hasText ? '0.4' : '1';
+            });
+        }
+
         async function handlePullLead() {
             const phoneEls = [document.getElementById('pull-lead-phone'), document.getElementById('pull-lead-phone-script')];
             const phone = phoneEls.map(el => el && el.value).find(v => v && v.trim()) || '';
@@ -1094,6 +1110,7 @@
                 statusEls.forEach(el => { if (el) el.innerText = ""; });
                 populateCockpitFromLead(lead);
                 phoneEls.forEach(el => { if (el) el.value = ''; });
+                handlePullLeadPhoneInput(); // re-enable Next Available Lead now that both fields are empty again
             } catch (err) {
                 statusEls.forEach(el => { if (el) el.innerText = err.message; });
             } finally {
