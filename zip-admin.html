@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Service Area Zip Codes | RevOps Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --color-bg-dark: #223129;
+        --color-box-translucent: rgba(255, 255, 255, 0.05);
+        --color-sage-accent: #4C9170;
+        --color-mint-soft: #8DC4AA;
+        --text-on-dark: #f8fafc;
+        --focus-glow: rgba(76, 145, 112, 0.2);
+        --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0; padding: 0;
+        font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+        background: var(--color-bg-dark); color: var(--text-on-dark); min-height: 100vh;
+    }
+    h1, h2 { font-family: 'Fraunces', serif; }
+    h2 {
+        margin-top: 0; margin-bottom: 20px; font-size: 19px; font-weight: 500;
+        color: var(--color-mint-soft); border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 10px;
+    }
+    #main-pane { max-width: 680px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: left; margin-bottom: 30px; }
+    header h1 { font-size: 26px; color: var(--color-mint-soft); margin: 0 0 4px; }
+    header p { margin: 0; font-size: 14px; opacity: 0.7; }
+
+    .form-section {
+        background: var(--color-box-translucent); padding: 24px;
+        border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px;
+    }
+    label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; color: var(--color-mint-soft); letter-spacing: 0.5px; }
+    p.help { font-size: 13px; opacity: 0.75; margin-top: 0; margin-bottom: 16px; }
+
+    input[type="file"], textarea {
+        width: 100%; padding: 12px; border-radius: 8px; font-size: 14px;
+        border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.15); color: #fff;
+        font-family: inherit; box-sizing: border-box; margin-bottom: 14px;
+    }
+    textarea { min-height: 90px; resize: vertical; }
+
+    .btn-primary {
+        background: var(--color-sage-accent); color: white; border: none;
+        padding: 14px 22px; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer;
+        text-transform: uppercase; letter-spacing: 1px; font-family: inherit;
+    }
+    .btn-primary:hover { background: #3d7a5c; }
+    .btn-secondary {
+        background: transparent; color: var(--color-mint-soft); border: 1px solid var(--color-mint-soft);
+        padding: 14px 22px; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer;
+        text-transform: uppercase; letter-spacing: 1px; font-family: inherit; margin-left: 10px;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.05); }
+
+    #status-msg { margin-top: 12px; font-size: 13px; min-height: 18px; }
+
+    .zip-count-display { font-size: 32px; font-weight: 800; color: var(--color-sage-accent); }
+    .zip-list-preview {
+        max-height: 220px; overflow-y: auto; font-size: 13px; font-family: monospace;
+        background: rgba(0,0,0,0.15); border-radius: 8px; padding: 12px; margin-top: 12px;
+        display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .zip-chip { background: rgba(76,145,112,0.2); padding: 3px 8px; border-radius: 4px; }
+
+    #login-gate {
+        display:flex; align-items:center; justify-content:center; height:100vh; width:100vw;
+        position:fixed; top:0; left:0; background:var(--color-bg-dark); z-index:1000;
+    }
+</style>
+</head>
+<body>
+
+<div id="login-gate">
+    <div style="background:var(--color-box-translucent); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:30px; width:320px; box-shadow:var(--shadow-soft);">
+        <h2 style="margin-top:0;">Executive Login</h2>
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@company.com" style="width:100%; padding:10px; margin-bottom:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.15);" onkeydown="if(event.key==='Enter') attemptLogin()">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" style="width:100%; padding:10px; margin-bottom:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.15);" onkeydown="if(event.key==='Enter') attemptLogin()">
+        <button class="btn-primary" style="width:100%;" onclick="attemptLogin()">Log In</button>
+        <div id="login-error" style="margin-top:10px; font-size:12px; color:#ef4444;"></div>
+    </div>
+</div>
+
+<div id="force-reset-gate" style="display:none; align-items:center; justify-content:center; height:100vh; width:100vw; position:fixed; top:0; left:0; background:var(--color-bg-dark); z-index:1000;">
+    <div style="background:var(--color-box-translucent); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:30px; width:320px; box-shadow:var(--shadow-soft);">
+        <h2 style="margin-top:0;">Set Your Password</h2>
+        <input type="password" id="reset-new-password" placeholder="New password" style="width:100%; padding:10px; margin-bottom:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.15);" onkeydown="if(event.key==='Enter') attemptForcedReset()">
+        <input type="password" id="reset-confirm-password" placeholder="Confirm password" style="width:100%; padding:10px; margin-bottom:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.15);" onkeydown="if(event.key==='Enter') attemptForcedReset()">
+        <button class="btn-primary" style="width:100%;" onclick="attemptForcedReset()">Set Password &amp; Continue</button>
+        <div id="reset-error" style="margin-top:10px; font-size:12px; color:#ef4444;"></div>
+    </div>
+</div>
+
+<div id="app-content" style="display:none;">
+    <div id="main-pane">
+        <header>
+            <h1>Service Area Zip Codes</h1>
+            <p>Add, review, and export the zip codes your eligibility tool checks against.</p>
+        </header>
+
+        <div class="form-section">
+            <h2>Current List</h2>
+            <div class="zip-count-display" id="zip-count">—</div>
+            <div style="font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:var(--color-mint-soft); margin-bottom:8px;">Zips in service area</div>
+            <div>
+                <button class="btn-secondary" onclick="handleRefreshList()">Refresh</button>
+                <button class="btn-secondary" onclick="handleExportCsv()">Export CSV</button>
+            </div>
+            <div class="zip-list-preview" id="zip-list-preview"></div>
+        </div>
+
+        <div class="form-section">
+            <h2>Upload CSV</h2>
+            <p class="help">One zip code per line, or comma-separated — either works. Adding a zip that's already on the list is harmless, it just gets re-confirmed.</p>
+            <input type="file" id="csv-file-input" accept=".csv,text/csv,text/plain">
+            <button class="btn-primary" onclick="handleUploadCsv()">Upload</button>
+            <div id="status-msg"></div>
+        </div>
+
+        <div class="form-section">
+            <h2>Quick Demo Seed</h2>
+            <p class="help">No CSV handy? Adds 10 sample zip codes so the eligibility check has something real to test against right now.</p>
+            <button class="btn-secondary" onclick="handleSeedDemoZips()">Seed 10 Demo Zips</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=4"></script>
+<script>
+    window.JITNEYLOGIC_CONFIG = {
+        clientId: "demo-pest-co",
+        leadsUrl: "https://jitneyleads-889415757227.us-central1.run.app/",
+        adminUrl: "https://jitneyadmin-889415757227.us-central1.run.app/",
+        firebaseConfig: {
+            apiKey: "AIzaSyDkWrGWcepdHlkzkeSGWLiIrV0Kxsul4nE",
+            authDomain: "jitneylogic-beta.firebaseapp.com",
+            projectId: "jitneylogic-beta",
+            storageBucket: "jitneylogic-beta.firebasestorage.app",
+            messagingSenderId: "889415757227",
+            appId: "1:889415757227:web:9e54a600eb654bb30276ee",
+            measurementId: "G-4JECF3BX6E"
+        }
+    };
+
+    function startAppAfterLogin() {
+        handleRefreshList();
+    }
+
+    function showStatus(msg, isError) {
+        const el = document.getElementById('status-msg');
+        el.innerText = msg;
+        el.style.color = isError ? '#ef4444' : 'var(--color-mint-soft)';
+    }
+
+    async function handleRefreshList() {
+        try {
+            const zips = await fireListZips();
+            document.getElementById('zip-count').innerText = zips.length;
+            const preview = document.getElementById('zip-list-preview');
+            preview.innerHTML = '';
+            zips.forEach(zip => {
+                const chip = document.createElement('span');
+                chip.className = 'zip-chip';
+                chip.innerText = zip;
+                preview.appendChild(chip);
+            });
+            window.currentZipList = zips; // cached for export
+        } catch (err) {
+            showStatus(err.message, true);
+        }
+    }
+
+    // Handles both newline-separated and comma-separated CSVs, and
+    // anything in between — splits on any run of non-digit characters,
+    // so a plain list, a comma list, or an actual CSV export from this
+    // same tool all parse the same way.
+    function parseZipsFromText(text) {
+        return text.split(/[^0-9]+/).map(s => s.trim()).filter(s => s.length === 5);
+    }
+
+    async function handleUploadCsv() {
+        const fileInput = document.getElementById('csv-file-input');
+        if (!fileInput.files.length) {
+            showStatus('Choose a CSV file first.', true);
+            return;
+        }
+        const text = await fileInput.files[0].text();
+        const zips = parseZipsFromText(text);
+        if (zips.length === 0) {
+            showStatus('No valid 5-digit zip codes found in that file.', true);
+            return;
+        }
+        showStatus(`Uploading ${zips.length} zip codes...`, false);
+        try {
+            const result = await fireBulkAddZips(zips);
+            showStatus(`Added ${result.added} zip codes${result.skipped.length ? ` (${result.skipped.length} skipped as invalid)` : ''}.`, false);
+            fileInput.value = '';
+            handleRefreshList();
+        } catch (err) {
+            showStatus(err.message, true);
+        }
+    }
+
+    async function handleSeedDemoZips() {
+        const demoZips = ['84601', '84602', '84604', '84606', '84660', '84663', '84003', '84043', '84045', '84097'];
+        showStatus('Seeding demo zip codes...', false);
+        try {
+            const result = await fireBulkAddZips(demoZips);
+            showStatus(`Added ${result.added} demo zip codes.`, false);
+            handleRefreshList();
+        } catch (err) {
+            showStatus(err.message, true);
+        }
+    }
+
+    function handleExportCsv() {
+        const zips = window.currentZipList || [];
+        if (zips.length === 0) {
+            showStatus('Nothing to export yet — refresh the list first.', true);
+            return;
+        }
+        const csvContent = zips.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'serviceable_zips.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    initAuthGate();
+</script>
+</body>
+</html>
