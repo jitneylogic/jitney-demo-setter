@@ -408,7 +408,17 @@
     <div id="script-pane">
         <h2>Call Flow & Scripting</h2>
 
-        <button type="button" class="btn-primary btn-transaction" id="btn-next-lead-script" onclick="handleClaimNextLead()">Next Available Lead</button>
+        <div style="display:flex; gap:8px;">
+            <input type="tel" id="pull-lead-phone-script" placeholder="Paste number off the dialer..." style="flex:1;">
+            <button type="button" class="btn-primary btn-transaction" id="btn-pull-lead-script" onclick="handlePullLead()" style="width:auto; padding-left:20px; padding-right:20px; margin-top:0;">Pull Lead</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+            <button type="button" class="btn-primary btn-transaction" id="btn-next-lead-script" onclick="handleClaimNextLead()" style="flex:1; margin-top:0;">Next Available Lead</button>
+            <div style="text-align:center; min-width:56px;">
+                <div id="callback-queue-count-script" style="font-size:20px; font-weight:800; color: var(--color-sage-accent); line-height:1;">0</div>
+                <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.5px; color: var(--sp-text-dim);">Waiting</div>
+            </div>
+        </div>
         <div class="setter-notes-box" id="setter-notes-box-script" style="display:none; margin-top:8px; padding:12px; border-radius:8px; background:rgba(76,145,112,0.12); border:1px solid var(--color-sage-accent);">
             <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color: var(--color-sage-accent); font-weight:700; margin-bottom:4px;">From Setter</div>
             <div id="setter-notes-text-script" style="font-size:13px; color: var(--sp-text-dim);"></div>
@@ -690,7 +700,17 @@
             <div class="console-col record-col">
             <h2>Customer Record</h2>
             <div class="form-section">
-                <button type="button" class="btn-primary btn-transaction" id="btn-next-lead" onclick="handleClaimNextLead()">Next Available Lead</button>
+                <div style="display:flex; gap:8px;">
+                    <input type="tel" id="pull-lead-phone" placeholder="Paste number off the dialer..." style="flex:1;">
+                    <button type="button" class="btn-primary btn-transaction" id="btn-pull-lead" onclick="handlePullLead()" style="width:auto; padding-left:20px; padding-right:20px; margin-top:0;">Pull Lead</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+                    <button type="button" class="btn-primary btn-transaction" id="btn-next-lead" onclick="handleClaimNextLead()" style="flex:1; margin-top:0;">Next Available Lead</button>
+                    <div style="text-align:center; min-width:56px;">
+                        <div id="callback-queue-count" style="font-size:20px; font-weight:800; color: var(--color-sage-accent); line-height:1;">0</div>
+                        <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.5px; color: var(--color-mint-soft);">Waiting</div>
+                    </div>
+                </div>
                 <div class="setter-notes-box" id="setter-notes-box" style="display:none; margin-top:8px; padding:12px; border-radius:8px; background:rgba(76,145,112,0.12); border:1px solid var(--color-sage-accent);">
                     <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color: var(--color-sage-accent); font-weight:700; margin-bottom:4px;">From Setter</div>
                     <div id="setter-notes-text" style="font-size:13px; color: var(--text-on-dark);"></div>
@@ -854,7 +874,7 @@
         </div>
     </div>
 
-    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=2"></script>
+    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=3"></script>
     <script>
         // =====================================================================
         // CLIENT CONFIG — the only block that should need to change when
@@ -953,11 +973,19 @@
             const dateEl = document.getElementById('intraday-date');
             if (dateEl) dateEl.innerText = dateStr;
 
-            // Setter → closer handoff: start listening for live transfers the
-            // moment this cockpit finishes loading. initTurnkeyEnvironment is
-            // already the shared engine's per-file "run after login" hook, so
-            // no changes to the shared engine's startAppAfterLogin were needed.
-            initHandoffListeners();
+            // Pull Lead replaced the broadcast-banner mechanism (see
+            // Phase 16 in the roadmap — the dialer here uses tiered
+            // round-robin routing, so broadcasting to every closer was
+            // wrong, not just unfinished). initHandoffListeners() and
+            // everything it wires up are deliberately left defined but
+            // no longer called — dead code on purpose, not deleted, in
+            // case a real dialer webhook integration revives this path
+            // later.
+
+            // Live count of leads sitting in the callback queue, next to
+            // the Next Available Lead button in both panes.
+            initCallbackQueueCounter('callback-queue-count');
+            initCallbackQueueCounter('callback-queue-count-script');
 
             // Recover state after a reload — without this, a refresh while a
             // lead was claimed left the server correctly still holding the
@@ -1038,6 +1066,34 @@
                 const msg = lead ? "" : "No leads available, try again.";
                 statusEls.forEach(el => { if (el) el.innerText = msg; });
                 if (lead) populateCockpitFromLead(lead);
+            } catch (err) {
+                statusEls.forEach(el => { if (el) el.innerText = err.message; });
+            } finally {
+                buttons.forEach(btn => { if (btn) btn.disabled = false; });
+            }
+        }
+
+        // Same dual-pane pattern as handleClaimNextLead. Searches both
+        // queues server-side (live first, callback fallback) by whatever
+        // digits are in the phone field — normalization happens in
+        // leads-service.js, this just passes the raw text through.
+        async function handlePullLead() {
+            const phoneEls = [document.getElementById('pull-lead-phone'), document.getElementById('pull-lead-phone-script')];
+            const phone = phoneEls.map(el => el && el.value).find(v => v && v.trim()) || '';
+            const buttons = [document.getElementById('btn-pull-lead'), document.getElementById('btn-pull-lead-script')];
+            const statusEls = [document.getElementById('next-lead-status'), document.getElementById('next-lead-status-script')];
+
+            if (!phone.trim()) {
+                statusEls.forEach(el => { if (el) el.innerText = "Paste a phone number first."; });
+                return;
+            }
+            buttons.forEach(btn => { if (btn) btn.disabled = true; });
+            statusEls.forEach(el => { if (el) el.innerText = "Searching..."; });
+            try {
+                const lead = await firePullLead(phone);
+                statusEls.forEach(el => { if (el) el.innerText = ""; });
+                populateCockpitFromLead(lead);
+                phoneEls.forEach(el => { if (el) el.value = ''; });
             } catch (err) {
                 statusEls.forEach(el => { if (el) el.innerText = err.message; });
             } finally {
