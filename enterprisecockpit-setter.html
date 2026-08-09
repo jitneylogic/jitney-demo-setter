@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Closer Workspace| RevOps Engine</title>
+    <title>Closer Workspace [FieldRoutes Prototype] | RevOps Engine</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -314,18 +314,23 @@
             grid-template-areas:
                 "record agreement"
                 "record stats";
+            /* This is the actual fix — my first attempt (align-content:start)
+               targeted the wrong mechanism and likely did nothing, since
+               align-content only redistributes space in a container that's
+               already taller than its tracks need, which wasn't the actual
+               situation here. The real cause: with implicit auto-sized rows
+               (the default when grid-template-rows isn't set), a spanning
+               item like .record-col is allowed to stretch those rows to fit
+               its own height. Explicitly sized rows behave differently — a
+               spanning item that needs more room than min-content rows
+               provide simply overflows past them instead of inflating them.
+               That's what actually stops .record-col's height (now taller,
+               with Pull Lead + the shrunk button row + the notes box all
+               added this session) from pushing .agreement-col and
+               .bottom-stats-wrap apart. */
+            grid-template-rows: min-content min-content;
             gap: 24px;
             align-items: start;
-            /* Without this, when .record-col (spanning both rows) needs
-               more total height than .agreement-col + .bottom-stats-wrap
-               naturally do — exactly what happened once Pull Lead, the
-               shrunk Next Available Lead row, and the notes box were all
-               added — the grid stretches the two row tracks apart to fill
-               that extra height, opening a gap between them instead of
-               packing them tight at the top. align-content:start tells the
-               grid to pack its row tracks at the top and leave any leftover
-               height at the bottom (next to the shorter column), not
-               distributed between rows. */
             align-content: start;
         }
         body.hide-script-pane .agreement-col { grid-area: agreement; }
@@ -442,7 +447,7 @@
         </div>
         
         <div class="script-block">
-            <span class="script-quote">This is <span class="script-highlight-text cfg-rep-name"></span> on a recorded line, who do I have the pleasure of speaking with today?</span>
+            <span class="script-quote">This is <span class="script-highlight-text cfg-rep-name"></span> on a recorded line, am I speaking with <span class="script-highlight-text inject-script-name">____</span>?</span>
         </div>
         <div class="script-field-wrapper">
             <label>Customer First Name</label>
@@ -450,7 +455,7 @@
         </div>
 
         <div class="script-block">
-            <span class="script-quote">Hey <span class="script-highlight-text inject-script-name">____</span>, tell me exactly what's going on at the property.</span>
+            <span class="script-quote">Hey <span class="script-highlight-text inject-script-name">____</span>, <span class="script-highlight-text inject-setter-name">your setter</span> told me that you are dealing with <span class="script-highlight-text inject-pest-list">some pest issues</span>, do you want to tell me more about what's going on?</span>
         </div>
         <div class="script-field-wrapper">
             <label>Active Target Infestations</label>
@@ -498,7 +503,13 @@
         </div>
 
         <div class="script-block">
-            <span class="script-quote">To guarantee I generate the correct regional pricing, what is the exact service address?</span>
+            <span class="script-quote">To guarantee I get you the correct pricing, what's the square footage of your property?</span>
+            <select id="sqft-select-script" onchange="handleSqftChange(this.value)" style="margin-top: 10px; width: 100%;">
+                <option value="">-- Select square footage --</option>
+                <option value="0-3000">0 - 3,000 sq. ft.</option>
+                <option value="3001-5000">3,001 - 5,000 sq. ft.</option>
+                <option value="5001+">5,001+ sq. ft.</option>
+            </select>
         </div>
         <div class="script-field-wrapper">
             <label>Service Address</label>
@@ -752,8 +763,13 @@
 
                 <div class="grid-2">
                     <div class="form-group">
-                        <label>Account Number</label>
-                        <input type="text" id="account-number" placeholder="waiting on account creation..." readonly>
+                        <label>Square Footage</label>
+                        <select id="sqft-select" onchange="handleSqftChange(this.value)">
+                            <option value="">-- Select --</option>
+                            <option value="0-3000">0 - 3,000 sq. ft.</option>
+                            <option value="3001-5000">3,001 - 5,000 sq. ft.</option>
+                            <option value="5001+">5,001+ sq. ft.</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Service Address</label>
@@ -885,7 +901,7 @@
         </div>
     </div>
 
-    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=5"></script>
+    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=6"></script>
     <script>
         // =====================================================================
         // CLIENT CONFIG — the only block that should need to change when
@@ -1156,6 +1172,21 @@
                 cb.checked = (lead.pestTypes || []).includes(cb.value);
             });
             parseScriptPestLogicHandshake(); // propagates script-pest-cb -> pest-checkbox + notes/facts
+
+            // Reflects what the setter actually told the customer, at
+            // handoff time — a snapshot, not a live readout of whatever
+            // the closer later checks or unchecks during the call.
+            document.querySelectorAll('.inject-setter-name').forEach(el => {
+                el.innerText = lead.setterName || 'your setter';
+            });
+            const pestList = (lead.pestTypes || []);
+            const pestPhrase = pestList.length === 0 ? 'some pest issues'
+                : pestList.length === 1 ? pestList[0]
+                : pestList.length === 2 ? `${pestList[0]} and ${pestList[1]}`
+                : `${pestList.slice(0, -1).join(', ')}, and ${pestList[pestList.length - 1]}`;
+            document.querySelectorAll('.inject-pest-list').forEach(el => {
+                el.innerText = pestPhrase;
+            });
             // Deliberately NOT calling syncNotesText(lead.notes) here anymore —
             // that field is the rep's own call notes, not a place to dump the
             // setter's notes into. They're shown separately above instead.
