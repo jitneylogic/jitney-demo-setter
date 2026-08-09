@@ -311,33 +311,28 @@
         body.hide-script-pane .console-columns {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            grid-template-areas:
-                "record agreement"
-                "record stats";
-            /* This is the actual fix — my first attempt (align-content:start)
-               targeted the wrong mechanism and likely did nothing, since
-               align-content only redistributes space in a container that's
-               already taller than its tracks need, which wasn't the actual
-               situation here. The real cause: with implicit auto-sized rows
-               (the default when grid-template-rows isn't set), a spanning
-               item like .record-col is allowed to stretch those rows to fit
-               its own height. Explicitly sized rows behave differently — a
-               spanning item that needs more room than min-content rows
-               provide simply overflows past them instead of inflating them.
-               That's what actually stops .record-col's height (now taller,
-               with Pull Lead + the shrunk button row + the notes box all
-               added this session) from pushing .agreement-col and
-               .bottom-stats-wrap apart. */
-            grid-template-rows: min-content min-content;
+            grid-template-areas: "record right";
             gap: 24px;
             align-items: start;
-            align-content: start;
         }
-        body.hide-script-pane .agreement-col { grid-area: agreement; }
         body.hide-script-pane .record-col { grid-area: record; }
-        body.hide-script-pane .bottom-stats-wrap {
-            grid-area: stats; max-width: none; margin: 0;
+        /* This is the real, structural fix — two previous CSS-only attempts
+           (align-content:start, then explicit min-content rows) both failed
+           to hold, confirmed by direct testing, not assumption. Rather than
+           keep guessing at which CSS Grid mechanism governs how a spanning
+           item's height interacts with two separately-tracked siblings,
+           .agreement-col and .bottom-stats-wrap are now both children of
+           this single wrapper, which is itself one grid item — not two
+           separate row tracks that .record-col's height could ever pull
+           apart. Their vertical stacking happens via ordinary flex-column
+           flow inside this wrapper, completely independent of whatever
+           height .record-col needs. There's no longer a shared row-sizing
+           calculation between them at all, so there's nothing left for
+           .record-col's height to distort. */
+        body.hide-script-pane .right-column-stack {
+            grid-area: right; display: flex; flex-direction: column; gap: 24px;
         }
+        body.hide-script-pane .bottom-stats-wrap { max-width: none; margin: 0; }
         body.hide-script-pane .live-metrics-heading { display: block; }
         .theme-toggle { display: flex; background: var(--sp-hairline); border-radius: 20px; padding: 3px; gap: 2px; }
         .theme-toggle button {
@@ -625,6 +620,7 @@
 
         <form id="closer-portal-form" onsubmit="fireRevenuePipelineTracking(event)">
             <div class="console-columns">
+            <div class="right-column-stack">
             <div class="console-col agreement-col">
             <h2>Agreement & Pricing Console</h2>
             <div class="form-section">
@@ -717,6 +713,49 @@
                     </div>
                 </div>
             </div>
+            </div>
+
+            <div class="bottom-stats-wrap">
+        <h2 class="live-metrics-heading" style="display:none;">Live Metrics</h2>
+        <div class="metrics-dashboard">
+            <div class="metrics-card">
+                <h3>Daily Production</h3>
+                <div class="metrics-row"><span>Calls Taken:</span><span id="day-calls" class="metrics-val">0</span></div>
+                <div class="metrics-row"><span>Closed / Rate:</span><span class="metrics-val"><span id="day-sold">0</span> (<span id="day-rate">0.0%</span>)</span></div>
+                <div class="metrics-row"><span>Total TCV:</span><span id="day-tcv" class="metrics-val val-highlight">$0.00</span></div>
+                <div class="metrics-row"><span>Avg Contract (ACV):</span><span id="day-acv" class="metrics-val">$0.00</span></div>
+                <div class="metrics-row"><span>Rev Per Call (RPC):</span><span id="day-rpc" class="metrics-val">$0.00</span></div>
+                <div class="metrics-row" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 8px;">
+                    <span class="strong-label">Est. Commission:</span><span id="day-comm" class="metrics-val val-highlight">$0.00</span>
+                </div>
+            </div>
+            <div class="metrics-card">
+                <h3>Weekly Pacing</h3>
+                <div class="metrics-row"><span>Calls Taken:</span><span id="week-calls" class="metrics-val">0</span></div>
+                <div class="metrics-row"><span>Closed / Rate:</span><span class="metrics-val"><span id="week-sold">0</span> (<span id="week-rate">0.0%</span>)</span></div>
+                <div class="metrics-row"><span>Total TCV:</span><span id="week-tcv" class="metrics-val val-highlight">$0.00</span></div>
+                <div class="metrics-row"><span>Avg Contract (ACV):</span><span id="week-acv" class="metrics-val">$0.00</span></div>
+                <div class="metrics-row"><span>Rev Per Call (RPC):</span><span id="week-rpc" class="metrics-val">$0.00</span></div>
+                <div class="metrics-row" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 8px;">
+                    <span class="strong-label">Est. Commission:</span><span id="week-comm" class="metrics-val val-highlight">$0.00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="leaderboard-section">
+            <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 12px;">
+                <label class="strong-label" style="margin:0;">Live Office Leaderboard</label>
+                <div class="theme-toggle" id="toggle-office-leaderboard">
+                    <button type="button" class="active" onclick="setOfficeLeaderboardTimeframe('daily')">Day</button>
+                    <button type="button" onclick="setOfficeLeaderboardTimeframe('weekly')">Week</button>
+                    <button type="button" onclick="setOfficeLeaderboardTimeframe('monthly')">Month</button>
+                </div>
+            </div>
+            <div class="leaderboard-grid" id="leaderboard-grid">
+                <div class="leaderboard-row"><span style="opacity:0.6;">Waiting for today's activity...</span></div>
+            </div>
+        </div>
+        </div>
             </div>
 
             <div class="console-col record-col">
@@ -844,44 +883,6 @@
                 </div>
             </div>
             </div>
-
-            <div class="bottom-stats-wrap">
-        <h2 class="live-metrics-heading" style="display:none;">Live Metrics</h2>
-        <div class="metrics-dashboard">
-            <div class="metrics-card">
-                <h3>Daily Production</h3>
-                <div class="metrics-row"><span>Calls Taken:</span><span id="day-calls" class="metrics-val">0</span></div>
-                <div class="metrics-row"><span>Closed / Rate:</span><span class="metrics-val"><span id="day-sold">0</span> (<span id="day-rate">0.0%</span>)</span></div>
-                <div class="metrics-row"><span>Total TCV:</span><span id="day-tcv" class="metrics-val val-highlight">$0.00</span></div>
-                <div class="metrics-row"><span>Avg Contract (ACV):</span><span id="day-acv" class="metrics-val">$0.00</span></div>
-                <div class="metrics-row"><span>Rev Per Call (RPC):</span><span id="day-rpc" class="metrics-val">$0.00</span></div>
-                <div class="metrics-row" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 8px;">
-                    <span class="strong-label">Est. Commission:</span><span id="day-comm" class="metrics-val val-highlight">$0.00</span>
-                </div>
-            </div>
-            <div class="metrics-card">
-                <h3>Weekly Pacing</h3>
-                <div class="metrics-row"><span>Calls Taken:</span><span id="week-calls" class="metrics-val">0</span></div>
-                <div class="metrics-row"><span>Closed / Rate:</span><span class="metrics-val"><span id="week-sold">0</span> (<span id="week-rate">0.0%</span>)</span></div>
-                <div class="metrics-row"><span>Total TCV:</span><span id="week-tcv" class="metrics-val val-highlight">$0.00</span></div>
-                <div class="metrics-row"><span>Avg Contract (ACV):</span><span id="week-acv" class="metrics-val">$0.00</span></div>
-                <div class="metrics-row"><span>Rev Per Call (RPC):</span><span id="week-rpc" class="metrics-val">$0.00</span></div>
-                <div class="metrics-row" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 8px;">
-                    <span class="strong-label">Est. Commission:</span><span id="week-comm" class="metrics-val val-highlight">$0.00</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="leaderboard-section">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                <label class="strong-label" style="margin:0;">Live Office Leaderboard</label>
-                <label style="color:var(--color-mint-soft); margin:0;" id="intraday-date">Today</label>
-            </div>
-            <div class="leaderboard-grid" id="leaderboard-grid">
-                <div class="leaderboard-row"><span style="opacity:0.6;">Waiting for today's activity...</span></div>
-            </div>
-        </div>
-        </div>
             </div>
         </form>
 
@@ -901,7 +902,7 @@
         </div>
     </div>
 
-    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=8"></script>
+    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=10"></script>
     <script>
         // =====================================================================
         // CLIENT CONFIG — the only block that should need to change when
@@ -1177,7 +1178,7 @@
             // handoff time — a snapshot, not a live readout of whatever
             // the closer later checks or unchecks during the call.
             document.querySelectorAll('.inject-setter-name').forEach(el => {
-                el.innerText = lead.setterName || 'your setter';
+                el.innerText = (lead.setterName || '').trim().split(/\s+/)[0] || 'your setter';
             });
             const pestList = (lead.pestTypes || []);
             const pestPhrase = pestList.length === 0 ? 'some pest issues'
