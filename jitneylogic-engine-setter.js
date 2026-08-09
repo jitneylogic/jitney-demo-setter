@@ -321,6 +321,12 @@ async function selectAddressSuggestion(inputEl, suggestion) {
     syncAddressValue(finalValue);
     closeAddressDropdown(inputEl);
     addressSessionToken = null; // session ends on selection
+
+    // Optional hook, guarded by existence check — same pattern as
+    // window.renderIncomingBanner. Used by the setter cockpit to
+    // auto-fill the zip eligibility field from the selected address;
+    // harmless no-op on any page that doesn't define it.
+    if (window.onAddressSelected) window.onAddressSelected(currentAddressComponents);
 }
 
 function updateAddressHighlight(inputEl) {
@@ -1383,15 +1389,76 @@ function initCallbackQueueCounter(elementId) {
     const db = firebase.firestore();
     const el = document.getElementById(elementId);
     if (!el) return;
-    db.collection("clients").doc(config.clientId).collection("leads")
-        .where("status", "==", "queued")
-        .onSnapshot(snap => {
-            el.innerText = snap.size;
+    // Reads the queue_stats aggregate, not the leads collection directly.
+    // The leads collection correctly requires authentication (individual
+    // documents carry real contact info) — but the executive dashboard
+    // never logs a user in at all (same as daily_stats/weekly_stats, it's
+    // meant to run unattended on a TV). Querying leads directly from an
+    // unauthenticated page silently failed the permission check and left
+    // this stuck at 0 forever. queue_stats is a bare count with no PII,
+    // public-read the same way daily_stats already is.
+    db.collection("clients").doc(config.clientId).collection("queue_stats").doc("callback")
+        .onSnapshot(doc => {
+            el.innerText = doc.exists ? (doc.data().count || 0) : 0;
         }, err => {
             console.error("Callback queue counter listener failed:", err.message);
         });
 }
 window.initCallbackQueueCounter = initCallbackQueueCounter;
+
+// SETTER SIDE — zip eligibility check.
+async function fireCheckZipEligibility(zip) {
+    const config = getConfig();
+    if (!config.leadsUrl) throw new Error("Setup error: leadsUrl is not configured.");
+    const authHeader = await getAuthHeader();
+    const resp = await fetch(config.leadsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify({ action: "check_zip_eligibility", clientId: config.clientId, zip })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.status !== "success") {
+        throw new Error(data.message || "Couldn't check that zip code.");
+    }
+    return data.eligible;
+}
+window.fireCheckZipEligibility = fireCheckZipEligibility;
+
+// EXEC ADMIN — bulk add zips from a parsed CSV (array of strings), and
+// list the current serviceable-zip list for export. Both go through the
+// backend (Admin SDK) rather than direct client Firestore access — see
+// firestore.rules comment on serviceable_zips for why.
+async function fireBulkAddZips(zips) {
+    const config = getConfig();
+    const authHeader = await getAuthHeader();
+    const resp = await fetch(config.leadsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify({ action: "bulk_add_zips", clientId: config.clientId, zips })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.status !== "success") {
+        throw new Error(data.message || "Couldn't add those zip codes.");
+    }
+    return data; // { added, skipped }
+}
+window.fireBulkAddZips = fireBulkAddZips;
+
+async function fireListZips() {
+    const config = getConfig();
+    const authHeader = await getAuthHeader();
+    const resp = await fetch(config.leadsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify({ action: "list_zips", clientId: config.clientId })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.status !== "success") {
+        throw new Error(data.message || "Couldn't load the zip list.");
+    }
+    return data.zips;
+}
+window.fireListZips = fireListZips;
 
 window.fireCompleteLead = fireCompleteLead;
 
