@@ -886,7 +886,8 @@ function dateKeysForToday() {
     const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
     const weekNr = 1 + Math.round(((target - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
     const weekly = `${target.getUTCFullYear()}-W${String(weekNr).padStart(2, "0")}`;
-    return { daily, weekly };
+    const monthly = daily.slice(0, 7);
+    return { daily, weekly, monthly };
 }
 
 function renderPersonalStats(prefix, statsDoc) {
@@ -1075,17 +1076,34 @@ function initExecutiveDashboard() {
     }
     const db = firebase.firestore();
     const clientRef = db.collection('clients').doc(config.clientId);
-    const { daily, weekly } = dateKeysForToday();
+    const { daily, weekly, monthly } = dateKeysForToday();
+
+    // Cached here, not just rendered immediately — the day/week/month
+    // toggle on the dashboard needs to re-render either table on demand
+    // without waiting for a new Firestore snapshot, so the latest doc for
+    // each timeframe has to be available outside this listener's scope.
+    window.latestDeptStats = window.latestDeptStats || { daily: null, weekly: null, monthly: null };
 
     clientRef.collection('daily_stats').doc(daily).onSnapshot(doc => {
         const data = doc.data();
+        window.latestDeptStats.daily = data;
         renderDepartmentCard('global-today', data);
-        renderRepStandingsTable(data);
+        if (window.onDeptStatsUpdated) window.onDeptStatsUpdated('daily', data);
     }, err => console.error("Daily stats listener error:", err));
 
     clientRef.collection('weekly_stats').doc(weekly).onSnapshot(doc => {
-        renderDepartmentCard('global-week', doc.data());
+        const data = doc.data();
+        window.latestDeptStats.weekly = data;
+        renderDepartmentCard('global-week', data);
+        if (window.onDeptStatsUpdated) window.onDeptStatsUpdated('weekly', data);
     }, err => console.error("Weekly stats listener error:", err));
+
+    clientRef.collection('monthly_stats').doc(monthly).onSnapshot(doc => {
+        const data = doc.data();
+        window.latestDeptStats.monthly = data;
+        renderDepartmentCard('global-month', data);
+        if (window.onDeptStatsUpdated) window.onDeptStatsUpdated('monthly', data);
+    }, err => console.error("Monthly stats listener error:", err));
 }
 window.initExecutiveDashboard = initExecutiveDashboard;
 
