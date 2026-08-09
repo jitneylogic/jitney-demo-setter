@@ -130,6 +130,21 @@
             <p class="help">No CSV handy? Adds 10 sample zip codes so the eligibility check has something real to test against right now.</p>
             <button class="btn-secondary" onclick="handleSeedDemoZips()">Seed 10 Demo Zips</button>
         </div>
+
+        <div class="form-section">
+            <h2>Export &amp; Clear Callback Queue</h2>
+            <p class="help">
+                End-of-day handoff for leads nobody got to. Downloads every lead currently
+                sitting in the callback queue as a CSV — name, phone, address, notes,
+                everything a real person needs to work it — then <strong>deletes those leads
+                from this system entirely.</strong> This is the one place in the whole system
+                that exports real customer contact info on purpose: once it's handed off,
+                there's no reason to keep it here too. Live-transfer leads aren't touched —
+                only the callback queue.
+            </p>
+            <button class="btn-primary" onclick="handleExportAndClearQueue()">Export &amp; Clear Callback Queue</button>
+            <div id="export-status-msg" style="margin-top:12px; font-size:13px; min-height:18px;"></div>
+        </div>
     </div>
 </div>
 
@@ -240,6 +255,63 @@
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+    }
+
+    // Escapes a value for CSV: wraps in quotes and doubles any internal
+    // quotes if it contains a comma, quote, or newline — otherwise leaves
+    // it plain. Notes fields especially can contain commas.
+    function csvEscape(value) {
+        const str = String(value == null ? '' : value);
+        if (/[",\n]/.test(str)) return '"' + str.replace(/"/g, '""') + '"';
+        return str;
+    }
+
+    async function handleExportAndClearQueue() {
+        const statusEl = document.getElementById('export-status-msg');
+        if (!confirm('This downloads every lead currently in the callback queue and then permanently deletes them from the system. This cannot be undone. Continue?')) {
+            return;
+        }
+        statusEl.innerText = 'Exporting...';
+        statusEl.style.color = 'var(--color-mint-soft)';
+        try {
+            const result = await fireExportAndClearQueue();
+            if (result.cleared === 0) {
+                statusEl.innerText = 'Callback queue was already empty — nothing to export.';
+                return;
+            }
+            const formatCreatedAt = (ts) => {
+                if (!ts) return '';
+                // Not fully certain of the exact shape Firestore Timestamps
+                // take after Admin SDK -> res.json() -> JSON.parse() on the
+                // client — try the documented {_seconds} shape first, fall
+                // back to treating it as a plain date string. Worst case
+                // this column is blank, which doesn't affect the rest of
+                // the export.
+                if (typeof ts === 'object' && ts._seconds) return new Date(ts._seconds * 1000).toLocaleString();
+                const d = new Date(ts);
+                return isNaN(d) ? '' : d.toLocaleString();
+            };
+            const headers = ['Name', 'Phone', 'Address', 'Pest Types', 'Notes', 'Setter', 'Submitted At'];
+            const rows = result.leads.map(lead => [
+                lead.customerName, lead.customerPhone, lead.address,
+                (lead.pestTypes || []).join('; '), lead.notes, lead.setterName,
+                formatCreatedAt(lead.createdAt)
+            ].map(csvEscape).join(','));
+            const csvContent = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `callback_queue_export_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            statusEl.innerText = `Exported and cleared ${result.cleared} lead${result.cleared === 1 ? '' : 's'} from the callback queue.`;
+        } catch (err) {
+            statusEl.innerText = err.message;
+            statusEl.style.color = '#ef4444';
+        }
     }
 
     initAuthGate();
