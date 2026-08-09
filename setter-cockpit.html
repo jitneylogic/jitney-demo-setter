@@ -234,6 +234,18 @@
             </div>
 
             <div class="form-group">
+                <label>Service Area Check</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="setter-zip-input" placeholder="Zip code" maxlength="5" inputmode="numeric"
+                        oninput="this.value = this.value.replace(/\D/g, '').slice(0, 5); resetZipEligibilityState();"
+                        style="flex:1;">
+                    <button type="button" class="btn-primary btn-transaction" id="btn-check-eligibility" onclick="handleCheckZipEligibility()"
+                        style="width:auto; padding-left:20px; padding-right:20px; margin-top:0;">Check Eligibility</button>
+                </div>
+                <div id="zip-eligibility-status" style="font-size:13px; font-weight:700; margin-top:8px; min-height:18px;"></div>
+            </div>
+
+            <div class="form-group">
                 <label>Pest / Service Interest</label>
                 <div class="multiselect-container" id="setter-pest-dropdown-wrapper">
                     <div class="select-display-box" onclick="toggleSetterPestDropdown(event)">
@@ -265,6 +277,7 @@
                 <label>Unqualified Reason</label>
                 <select id="unqualified-reason-select" onchange="handleUnqualifiedReasonChange()">
                     <option value="">-- Select if not qualified --</option>
+                    <option value="Out of Area">Out of Area</option>
                     <option value="Unqualified reason #1">Unqualified reason #1</option>
                     <option value="Unqualified reason #2">Unqualified reason #2</option>
                     <option value="Unqualified reason #3">Unqualified reason #3</option>
@@ -300,7 +313,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAdT027lWYDDB6Ab58_h0JfvnehSt8UPF0&libraries=places&loading=async" async defer></script>
-<script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=3"></script>
+<script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=4"></script>
 <script>
     window.JITNEYLOGIC_CONFIG = {
         clientId: "demo-pest-co",
@@ -352,6 +365,58 @@
         }
     });
 
+    let zipEligibleState = null; // null = not checked, true = eligible, false = out of area
+
+    function resetZipEligibilityState() {
+        zipEligibleState = null;
+        document.getElementById('zip-eligibility-status').innerText = '';
+    }
+
+    async function handleCheckZipEligibility() {
+        const zip = document.getElementById('setter-zip-input').value.trim();
+        const statusEl = document.getElementById('zip-eligibility-status');
+        if (!/^\d{5}$/.test(zip)) {
+            statusEl.innerText = 'Enter a 5-digit zip code.';
+            statusEl.style.color = '#ef4444';
+            return;
+        }
+        statusEl.innerText = 'Checking...';
+        statusEl.style.color = 'var(--color-mint-soft)';
+        try {
+            const eligible = await fireCheckZipEligibility(zip);
+            zipEligibleState = eligible;
+            if (eligible) {
+                statusEl.innerText = '✓ Qualified — in service area';
+                statusEl.style.color = 'var(--color-sage-accent)';
+            } else {
+                statusEl.innerText = '✗ Out of service area';
+                statusEl.style.color = '#ef4444';
+                // Automates the same path a setter would take manually —
+                // selects the reason and runs the exact same grey-out logic
+                // that already fires when a reason is picked by hand.
+                document.getElementById('unqualified-reason-select').value = 'Out of Area';
+                handleUnqualifiedReasonChange();
+            }
+        } catch (err) {
+            zipEligibleState = null;
+            statusEl.innerText = err.message;
+            statusEl.style.color = '#ef4444';
+        }
+    }
+
+    // Auto-fills from the selected address's postal code (already
+    // extracted internally by the shared engine, just never surfaced
+    // before) and immediately runs the check — matches "if the customer
+    // gives their address, fill it and check it." If the customer won't
+    // give an address, the setter types the zip directly instead; this
+    // hook simply never fires in that case.
+    window.onAddressSelected = function (components) {
+        if (components && components.zip) {
+            document.getElementById('setter-zip-input').value = components.zip;
+            handleCheckZipEligibility();
+        }
+    };
+
     function readLeadFromForm() {
         return {
             customerName: document.getElementById('setter-customer-name').value.trim(),
@@ -366,6 +431,8 @@
         document.getElementById('setter-customer-name').value = '';
         document.getElementById('setter-customer-phone').value = '';
         document.getElementById('setter-address-input').value = '';
+        document.getElementById('setter-zip-input').value = '';
+        resetZipEligibilityState();
         document.querySelectorAll('.setter-pest-cb').forEach(cb => cb.checked = false);
         updateSetterPestDisplayText();
         document.getElementById('setter-notes').value = '';
@@ -397,8 +464,23 @@
     // separate toggle anymore.
     async function handleQualifiedSubmit(transferType) {
         const lead = readLeadFromForm();
+        // Every field required except address — some customers won't give
+        // that up this early, but a qualified lead needs everything else:
+        // name, phone, at least one pest/service selected, and notes.
         if (!lead.customerName || !lead.customerPhone) {
             showStatus("Name and phone are required before submitting.", true);
+            return;
+        }
+        if (lead.pestTypes.length === 0) {
+            showStatus("Select at least one pest/service before submitting.", true);
+            return;
+        }
+        if (!lead.notes) {
+            showStatus("Notes are required before submitting a qualified lead.", true);
+            return;
+        }
+        if (zipEligibleState !== true) {
+            showStatus("Check zip eligibility before submitting a qualified lead.", true);
             return;
         }
         lead.qualified = true;
