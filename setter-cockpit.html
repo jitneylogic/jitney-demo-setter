@@ -224,7 +224,7 @@
                 </div>
                 <div class="form-group">
                     <label>Phone Number</label>
-                    <input type="tel" id="setter-customer-phone" placeholder="(555) 555-5555">
+                    <input type="tel" id="setter-customer-phone" placeholder="(555) 555-5555" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 12);">
                 </div>
             </div>
 
@@ -278,11 +278,12 @@
                 <select id="unqualified-reason-select" onchange="handleUnqualifiedReasonChange()">
                     <option value="">-- Select if not qualified --</option>
                     <option value="Out of Area">Out of Area</option>
-                    <option value="Unqualified reason #1">Unqualified reason #1</option>
-                    <option value="Unqualified reason #2">Unqualified reason #2</option>
-                    <option value="Unqualified reason #3">Unqualified reason #3</option>
-                    <option value="Unqualified reason #4">Unqualified reason #4</option>
-                    <option value="Unqualified reason #5">Unqualified reason #5</option>
+                    <option value="Unqualified Pest">Unqualified Pest</option>
+                    <option value="Robocall">Robocall</option>
+                    <option value="Current Customer">Current Customer</option>
+                    <option value="Unqualified Property">Unqualified Property</option>
+                    <option value="Non-English Speaker">Non-English Speaker</option>
+                    <option value="Call Issue">Call Issue</option>
                 </select>
             </div>
 
@@ -313,7 +314,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAdT027lWYDDB6Ab58_h0JfvnehSt8UPF0&libraries=places&loading=async" async defer></script>
-<script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=8"></script>
+<script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=10"></script>
 <script>
     window.JITNEYLOGIC_CONFIG = {
         clientId: "demo-pest-co",
@@ -462,6 +463,13 @@
     // Live Transfer / Callback Queue — clicking either one submits
     // immediately. Qualified is implied by which button was pressed; no
     // separate toggle anymore.
+    // Digits are already stripped live via the phone field's oninput, so
+    // by the time this runs, a valid number is 10-12 plain digits (allows
+    // for an extra area/country code prefix without hardcoding exactly 10).
+    function isValidPhoneLength(phone) {
+        return phone.length >= 10 && phone.length <= 12;
+    }
+
     async function handleQualifiedSubmit(transferType) {
         const lead = readLeadFromForm();
         // Every field required except address — some customers won't give
@@ -469,6 +477,10 @@
         // name, phone, at least one pest/service selected, and notes.
         if (!lead.customerName || !lead.customerPhone) {
             showStatus("Name and phone are required before submitting.", true);
+            return;
+        }
+        if (!isValidPhoneLength(lead.customerPhone)) {
+            showStatus("Phone number must be 10-12 digits.", true);
             return;
         }
         if (lead.pestTypes.length === 0) {
@@ -502,6 +514,10 @@
         const reason = document.getElementById('unqualified-reason-select').value;
         if (!lead.customerName || !lead.customerPhone) {
             showStatus("Name and phone are required before submitting.", true);
+            return;
+        }
+        if (!isValidPhoneLength(lead.customerPhone)) {
+            showStatus("Phone number must be 10-12 digits.", true);
             return;
         }
         if (!reason) {
