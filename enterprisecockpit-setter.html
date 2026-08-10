@@ -65,20 +65,13 @@
             --sp-dynamic: hsl(180, 60%, 50%);
             --sp-h2-color: #ffffff;
         }
-        /* Typography, spacing, and sizing are intentionally IDENTICAL to
-           Green/Linen — Executive differs only in color (root variables
-           above) plus two small functional/stylistic exceptions below.
-           Do not reintroduce padding/margin/font-size/radius overrides
-           here without a specific reason — this was deliberately stripped
-           back after Executive drifted visibly larger than the other two. */
+
         body.theme-executive #input-pane input, body.theme-executive #input-pane select, body.theme-executive #input-pane textarea,
         body.theme-executive #input-pane .select-display-box {
             border: none; border-bottom: 1px solid rgba(255,255,255,0.1);
         }
         body.theme-executive #script-pane .checkbox-dropdown-window { background: #1A1C1F; }
 
-        /* Buttons — colored glow only, tightened close to the edges (was
-           spreading too wide at 15-20px blur; now 6-8px). No size change. */
         body.theme-executive .btn-primary { box-shadow: 0 2px 6px rgba(90,74,140,0.35); }
         body.theme-executive .btn-primary:hover { box-shadow: 0 3px 8px rgba(90,74,140,0.45); }
         body.theme-executive .btn-transaction { box-shadow: 0 2px 6px rgba(0,204,204,0.25); }
@@ -92,6 +85,11 @@
             color: var(--text-on-dark); 
         }
         
+        /* Hides lead acquisition controls when a lead is actively being handled */
+        body.has-active-lead .lead-acquisition-controls {
+            display: none !important;
+        }
+
         /* Left Panel - Guided Scripting Workspace */
         #script-pane { 
             width: 45%; 
@@ -280,32 +278,17 @@
         .pest-fact-bullet { margin: 6px 0 6px 10px; font-size: 14px; display: flex; align-items: flex-start; gap: 8px; }
         .pest-fact-bullet::before { content: "→"; color: var(--color-sage-accent); font-weight: bold; }
 
-        /* --- SCRIPT PANE THEME TOGGLE --- */
-        /* Green mode: script pane's own look toggles to light/Linen
-           (unconditionally, via #script-pane.light-mode below), but the
-           input pane is intentionally untouched here — it stays the plain
-           dark-green :root default whether the script pane is showing or
-           hidden. That default was already correct in both states; no
-           override was ever needed for input-pane's own colors. */
-
         .strong-label { color: #ffffff; }
         .theme-toggle-wrapper { margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--sp-hairline); display: flex; justify-content: space-between; align-items: center; gap: 16px; }
         .logged-in-block { display: flex; align-items: center; gap: 12px; }
 
-        /* Console columns — plain stacked blocks by default (identical to
-           the old layout). Only become a true side-by-side grid when the
-           script pane is hidden and there's room for it. */
         .console-columns { display: block; }
         .console-col { display: block; }
         .bottom-stats-wrap { display: block; }
 
-        /* Customer Record only makes sense as a destination when the rep
-           is living entirely on the right side — with the script pane
-           showing, all its fields already exist there instead. */
         .record-col { display: none; }
         body.hide-script-pane .record-col { display: block; }
 
-        /* Hide Script Pane mode */
         body.hide-script-pane #script-pane { display: none; }
         body.hide-script-pane #input-pane { width: 100%; }
         body.hide-script-pane .console-columns {
@@ -316,19 +299,7 @@
             align-items: start;
         }
         body.hide-script-pane .record-col { grid-area: record; }
-        /* This is the real, structural fix — two previous CSS-only attempts
-           (align-content:start, then explicit min-content rows) both failed
-           to hold, confirmed by direct testing, not assumption. Rather than
-           keep guessing at which CSS Grid mechanism governs how a spanning
-           item's height interacts with two separately-tracked siblings,
-           .agreement-col and .bottom-stats-wrap are now both children of
-           this single wrapper, which is itself one grid item — not two
-           separate row tracks that .record-col's height could ever pull
-           apart. Their vertical stacking happens via ordinary flex-column
-           flow inside this wrapper, completely independent of whatever
-           height .record-col needs. There's no longer a shared row-sizing
-           calculation between them at all, so there's nothing left for
-           .record-col's height to distort. */
+        
         body.hide-script-pane .right-column-stack {
             grid-area: right; display: flex; flex-direction: column; gap: 24px;
         }
@@ -342,12 +313,6 @@
         }
         .theme-toggle button.active { background: var(--color-sage-accent); color: #fff; }
 
-        /* Agreement signature status — scaffolding for the FieldRoutes prototype.
-           Sits horizontally next to the Send Agreement button (which is why
-           that button is 2/3 width — this fills the remaining third).
-           Blinks red/"Pending" by default; clicking toggles a demo-only
-           preview of the green/"Signed" state. Not wired to a real signing
-           event yet. */
         .signature-status {
             display: flex; align-items: center; gap: 8px;
             font-size: 12px; font-weight: 600; color: var(--sp-text-dim);
@@ -369,8 +334,6 @@
 </head>
 <body>
 
-<!-- Setter → Closer handoff: incoming live-transfer banner. Hidden until
-     a setter clicks "Live Transfer"; first closer to tap it claims the lead. -->
 <div id="incoming-transfer-banner" style="display:none; position:fixed; top:0; left:0; right:0;
      background: var(--color-sage-accent); color:#fff; padding:14px 20px; z-index:1500;
      align-items:center; justify-content:space-between; box-shadow:0 2px 8px rgba(0,0,0,0.3);">
@@ -419,11 +382,11 @@
     <div id="script-pane">
         <h2>Call Flow & Scripting</h2>
 
-        <div style="display:flex; gap:8px;">
+        <div class="lead-acquisition-controls" style="display:flex; gap:8px;">
             <input type="tel" id="pull-lead-phone-script" placeholder="Paste number off the dialer..." style="flex:1;" oninput="handlePullLeadPhoneInput()">
             <button type="button" class="btn-primary btn-transaction" id="btn-pull-lead-script" onclick="handlePullLead()" style="width:auto; padding-left:20px; padding-right:20px; margin-top:0;">Pull Lead</button>
         </div>
-        <div style="display:flex; align-items:center; gap:16px; margin-top:24px;">
+        <div class="lead-acquisition-controls" style="display:flex; align-items:center; gap:16px; margin-top:24px;">
             <button type="button" class="btn-primary btn-transaction" id="btn-next-lead-script" onclick="handleClaimNextLead()" style="flex: 0 0 38%; margin-top:0;">Next Available Lead</button>
             <div style="text-align:center; min-width:56px;">
                 <div id="callback-queue-count-script" style="font-size:20px; font-weight:800; color: var(--color-sage-accent); line-height:1;">0</div>
@@ -761,11 +724,11 @@
             <div class="console-col record-col">
             <h2>Customer Record</h2>
             <div class="form-section">
-                <div style="display:flex; gap:8px;">
+                <div class="lead-acquisition-controls" style="display:flex; gap:8px;">
                     <input type="tel" id="pull-lead-phone" placeholder="Paste number off the dialer..." style="flex:1;" oninput="handlePullLeadPhoneInput()">
                     <button type="button" class="btn-primary btn-transaction" id="btn-pull-lead" onclick="handlePullLead()" style="width:auto; padding-left:20px; padding-right:20px; margin-top:0;">Pull Lead</button>
                 </div>
-                <div style="display:flex; align-items:center; gap:16px; margin-top:24px;">
+                <div class="lead-acquisition-controls" style="display:flex; align-items:center; gap:16px; margin-top:24px;">
                     <button type="button" class="btn-primary btn-transaction" id="btn-next-lead" onclick="handleClaimNextLead()" style="flex: 0 0 38%; margin-top:0;">Next Available Lead</button>
                     <div style="text-align:center; min-width:56px;">
                         <div id="callback-queue-count" style="font-size:20px; font-weight:800; color: var(--color-sage-accent); line-height:1;">0</div>
@@ -905,40 +868,25 @@
     <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=10"></script>
     <script>
         // =====================================================================
-        // CLIENT CONFIG — the only block that should need to change when
-        // onboarding a new client. Everything else lives in jitneylogic-engine.js.
+        // CLIENT CONFIG
         // =====================================================================
         window.JITNEYLOGIC_CONFIG = {
-            // Must match the document ID under the `pricing_rules` collection
-            // in Firestore (see seed-pricing.js). This is the only thing that
-            // tells the shared Vault which client's pricing to use.
             clientId: "demo-pest-co",
             vaultUrl: "https://jitneyvault-889415757227.us-central1.run.app/",
             loggerUrl: "https://jitneylogger-889415757227.us-central1.run.app/",
             adminUrl: "https://jitneyadmin-889415757227.us-central1.run.app/",
-            businessTimezone: "America/Denver", // Utah — change per client (must match jitneylogger's BUSINESS_TIMEZONE)
+            businessTimezone: "America/Denver", 
             ardenusUrl: "https://REPLACE-WITH-ARDENUS-ENDPOINT.example.com/",
-            // Predicted URL based on your other 3 services' naming pattern
-            // (SERVICE-889415757227.us-central1.run.app). Confirm this matches
-            // what `gcloud run deploy` actually prints — see step 1 in
-            // SETTER_UPDATE_ROADMAP.md — and fix it here if it differs.
             leadsUrl: "https://jitneyleads-889415757227.us-central1.run.app/",
-            // dialerWebhookUrl intentionally omitted until we know this client's
-            // actual dialer — live transfers still work without it (see
-            // initIncomingTransferBanner in the shared engine).
-
-            // From Firebase Console → Project Settings → General → Your apps →
-            // SDK setup and configuration → Config. Safe to be public — this is
-            // the client identifier, not a secret; access is controlled by
-            // firestore.rules, not by hiding this object.
+            
            firebaseConfig: {
                 apiKey: "AIzaSyDkWrGWcepdHlkzkeSGWLiIrV0Kxsul4nE",
-  authDomain: "jitneylogic-beta.firebaseapp.com",
-  projectId: "jitneylogic-beta",
-  storageBucket: "jitneylogic-beta.firebasestorage.app",
-  messagingSenderId: "889415757227",
-  appId: "1:889415757227:web:9e54a600eb654bb30276ee",
-  measurementId: "G-4JECF3BX6E"
+                authDomain: "jitneylogic-beta.firebaseapp.com",
+                projectId: "jitneylogic-beta",
+                storageBucket: "jitneylogic-beta.firebasestorage.app",
+                messagingSenderId: "889415757227",
+                appId: "1:889415757227:web:9e54a600eb654bb30276ee",
+                measurementId: "G-4JECF3BX6E"
             },
 
             packageDisplayToVault: {
@@ -978,8 +926,6 @@
             ],
             defaultDeposit: 39,
 
-            // Which stat ranks the leaderboard/standings tables.
-            // Options: "revenue" (default), "calls_sold", "close_rate"
             leaderboardMetric: "revenue"
         };
 
@@ -1001,26 +947,19 @@
             const dateEl = document.getElementById('intraday-date');
             if (dateEl) dateEl.innerText = dateStr;
 
-            // Pull Lead replaced the broadcast-banner mechanism (see
-            // Phase 16 in the roadmap — the dialer here uses tiered
-            // round-robin routing, so broadcasting to every closer was
-            // wrong, not just unfinished). initHandoffListeners() and
-            // everything it wires up are deliberately left defined but
-            // no longer called — dead code on purpose, not deleted, in
-            // case a real dialer webhook integration revives this path
-            // later.
-
-            // Live count of leads sitting in the callback queue, next to
-            // the Next Available Lead button in both panes.
             initCallbackQueueCounter('callback-queue-count');
             initCallbackQueueCounter('callback-queue-count-script');
 
-            // Recover state after a reload — without this, a refresh while a
-            // lead was claimed left the server correctly still holding the
-            // lock but the cockpit with no memory of which lead it was, and
-            // no way to complete or release it. Runs every load; harmless
-            // no-op if there's nothing active.
             checkForActiveLeadOnLoad();
+            
+            // Watcher that toggles the acquisition controls based on active lead state
+            setInterval(() => {
+                if (window.currentActiveLeadId) {
+                    document.body.classList.add('has-active-lead');
+                } else {
+                    document.body.classList.remove('has-active-lead');
+                }
+            }, 250);
         }
 
         async function checkForActiveLeadOnLoad() {
@@ -1032,21 +971,10 @@
             statusEls.forEach(el => { if (el) el.innerText = "Restored your active lead from before the reload."; });
         }
 
-        // =====================================================================
-        // SETTER → CLOSER HANDOFF (closer side)
-        // Two entry points: the incoming-transfer banner (live transfers,
-        // real-time via Firestore) and "Next Available Lead" (the blind
-        // queue, replacing Google Chat laydowns). Both claims happen
-        // server-side in jitneyleads — see leads-service.js — so two closers
-        // clicking at once can never be assigned the same lead.
-        // =====================================================================
         const pendingTransfers = {};
 
         function renderIncomingBanner() {
             const banner = document.getElementById('incoming-transfer-banner');
-            // Don't interrupt someone already on a lead — it stays queued in
-            // pendingTransfers and will show the moment they free up (see the
-            // calls to this same function after completing/releasing below).
             if (window.currentActiveLeadId) {
                 banner.style.display = 'none';
                 return;
@@ -1072,19 +1000,12 @@
                 delete pendingTransfers[leadId];
                 renderIncomingBanner();
                 if (lead) populateCockpitFromLead(lead);
-                // If lead is null, someone else claimed it first — the banner
-                // has already moved on to whichever transfer is next, if any.
             } catch (err) {
                 alert("Couldn't claim this transfer: " + err.message);
             }
         }
 
         async function handleClaimNextLead() {
-            // Two instances of this button exist — one in the script pane,
-            // one in the record-col — because CSS shows exactly one of those
-            // two panes at a time (see .record-col / body.hide-script-pane
-            // rules). Both get disabled/updated together; whichever is
-            // actually visible is the one the rep sees react.
             const buttons = [document.getElementById('btn-next-lead'), document.getElementById('btn-next-lead-script')];
             const statusEls = [document.getElementById('next-lead-status'), document.getElementById('next-lead-status-script')];
             buttons.forEach(btn => { if (btn) btn.disabled = true; });
@@ -1101,15 +1022,6 @@
             }
         }
 
-        // Same dual-pane pattern as handleClaimNextLead. Searches both
-        // queues server-side (live first, callback fallback) by whatever
-        // digits are in the phone field — normalization happens in
-        // leads-service.js, this just passes the raw text through.
-        // Greys out Next Available Lead the instant either phone field has
-        // text in it — reduces the misclick risk of reaching for one button
-        // while mid-typing into the other. Re-enables the moment both
-        // fields are empty again, including after a successful Pull Lead
-        // clears them.
         function handlePullLeadPhoneInput() {
             const phoneEls = [document.getElementById('pull-lead-phone'), document.getElementById('pull-lead-phone-script')];
             const hasText = phoneEls.some(el => el && el.value.trim());
@@ -1138,7 +1050,7 @@
                 statusEls.forEach(el => { if (el) el.innerText = ""; });
                 populateCockpitFromLead(lead);
                 phoneEls.forEach(el => { if (el) el.value = ''; });
-                handlePullLeadPhoneInput(); // re-enable Next Available Lead now that both fields are empty again
+                handlePullLeadPhoneInput(); 
             } catch (err) {
                 statusEls.forEach(el => { if (el) el.innerText = err.message; });
             } finally {
@@ -1146,11 +1058,6 @@
             }
         }
 
-        // Drops a claimed lead into the real cockpit fields, reusing the
-        // same sync*() functions the manual-entry fields already call —
-        // this keeps both panes (script-pane + input-pane) in sync exactly
-        // the way the rest of the cockpit already works, rather than
-        // writing to one side and leaving the other stale.
         function populateCockpitFromLead(lead) {
             window.currentActiveLeadId = lead.id;
             document.querySelectorAll('.setter-notes-box').forEach(box => box.style.display = 'block');
@@ -1172,11 +1079,8 @@
             document.querySelectorAll('.script-pest-cb').forEach(cb => {
                 cb.checked = (lead.pestTypes || []).includes(cb.value);
             });
-            parseScriptPestLogicHandshake(); // propagates script-pest-cb -> pest-checkbox + notes/facts
+            parseScriptPestLogicHandshake(); 
 
-            // Reflects what the setter actually told the customer, at
-            // handoff time — a snapshot, not a live readout of whatever
-            // the closer later checks or unchecks during the call.
             document.querySelectorAll('.inject-setter-name').forEach(el => {
                 el.innerText = (lead.setterName || '').trim().split(/\s+/)[0] || 'your setter';
             });
@@ -1188,21 +1092,10 @@
             document.querySelectorAll('.inject-pest-list').forEach(el => {
                 el.innerText = pestPhrase;
             });
-            // Deliberately NOT calling syncNotesText(lead.notes) here anymore —
-            // that field is the rep's own call notes, not a place to dump the
-            // setter's notes into. They're shown separately above instead.
         }
 
-        // Releasing back to the queue is now handled through the outcome
-        // dropdown ("Release Lead") on the normal Submit Call flow — see
-        // fireRevenuePipelineTracking's outcome branch in the shared engine —
-        // rather than a separate standalone button.
         window.renderIncomingBanner = renderIncomingBanner;
 
-        // Real-time listener for live transfers — same onSnapshot pattern the
-        // leaderboard already uses. No-ops safely if the banner element isn't
-        // on the page (e.g. if this ever gets called from a file that hasn't
-        // added the banner markup).
         function initHandoffListeners() {
             if (!document.getElementById('incoming-transfer-banner')) return;
             initIncomingTransferBanner((leadId, leadData) => {
@@ -1250,13 +1143,6 @@
         window.setScriptPaneTheme = setScriptPaneTheme;
         setScriptPaneTheme(localStorage.getItem('jitneylogic_script_pane_theme') || 'dark');
 
-        // =====================================================================
-        // TEMPORARY DEMO-VIDEO SCAFFOLDING — remove after recording.
-        // Clicking the button itself now drives the status: immediately shows
-        // orange "Sent", then flips to green "Confirmed" 5 seconds later, so
-        // the video shows the full state change without needing a second click
-        // timed precisely during recording. Not wired to any real event yet.
-        // =====================================================================
         const objectionScripts = {
             "Okay": "Great! I'm going to send you over a confirmation document and then we can get something scheduled. How do you spell your last name?",
             "Spouse Objection": "[Spouse Objection Rebuttal Placeholder]",
@@ -1292,11 +1178,6 @@
         }
         window.runDemoSequence = runDemoSequence;
 
-        // Real gate logic (not scaffolding) — a note can't be saved to
-        // FieldRoutes before the customer account actually exists there.
-        // The actual write is still a placeholder pending real credentials
-        // (see roadmap), but this validation is genuine and will keep
-        // working unchanged once the real write is wired in.
         function saveFieldRoutesNote() {
             const confirmed = document.getElementById('cc-status-text').innerText === 'Confirmed';
             if (!confirmed) {
@@ -1313,11 +1194,6 @@
         }
         window.toggleScriptPaneVisibility = toggleScriptPaneVisibility;
 
-        // Keeps the left-pane and right-pane Call Outcome dropdowns mirrored,
-        // same pattern as date/window — whichever one the rep actually uses,
-        // both stay in sync, and since a hidden (display:none) required field
-        // is exempt from browser validation, submitting works correctly
-        // whether the script pane is showing or hidden.
         function syncNoteType(value) {
             document.getElementById('note-type-select').value = value;
             document.getElementById('note-type-select-left').value = value;
