@@ -589,7 +589,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=12"></script>
+    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=13"></script>
     <script>
         window.JITNEYLOGIC_CONFIG = {
           clientId: "demo-pest-co",
@@ -664,7 +664,7 @@
                     <td class="monospaced-cell">${row.callsSold}</td>
                     <td class="monospaced-cell">${row.rate.toFixed(1)}%</td>
                     <td class="monospaced-cell money-cell">$${row.revenue.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                    <td class="monospaced-cell">$${row.rpc.toFixed(2)}</td>
+                    <td class="monospaced-cell">$${row.rpc.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                 </tr>`;
             }).join('');
         }
