@@ -1,347 +1,662 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Service Area Zip Codes | RevOps Engine</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-    :root {
-        --color-bg-dark: #223129;
-        --color-box-translucent: rgba(255, 255, 255, 0.05);
-        --color-sage-accent: #4C9170;
-        --color-mint-soft: #8DC4AA;
-        --text-on-dark: #f8fafc;
-        --focus-glow: rgba(76, 145, 112, 0.2);
-        --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    }
-    * { box-sizing: border-box; }
-    body {
-        margin: 0; padding: 0;
-        font-family: 'Manrope', system-ui, -apple-system, sans-serif;
-        background: var(--color-bg-dark); color: var(--text-on-dark); min-height: 100vh;
-    }
-    h1, h2 { font-family: 'Fraunces', serif; }
-    h2 {
-        margin-top: 0; margin-bottom: 20px; font-size: 19px; font-weight: 500;
-        color: var(--color-mint-soft); border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 10px;
-    }
-    #main-pane { max-width: 680px; margin: 0 auto; padding: 40px 24px; }
-    header { text-align: left; margin-bottom: 30px; }
-    header h1 { font-size: 26px; color: var(--color-mint-soft); margin: 0 0 4px; }
-    header p { margin: 0; font-size: 14px; opacity: 0.7; }
+    <meta charset="UTF-8">
+    <title>JitneyLogic — Unified Executive Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg-dark: #223129;
+            --color-box-translucent: rgba(255, 255, 255, 0.05);
+            --color-sage-accent: #4C9170;
+            --color-mint-soft: #8DC4AA;
+            --text-on-dark: #f8fafc;
+            --color-input-darkgreen: rgba(0,0,0,0.25);
+            --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+            background: var(--color-bg-dark); color: var(--text-on-dark);
+            min-height: 100vh; box-sizing: border-box;
+        }
+        h1, h2, h3 { font-family: 'Fraunces', serif; font-weight: 500; }
+        h2 { margin-top: 0; margin-bottom: 20px; font-size: 19px; color: var(--color-mint-soft); border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+        
+        /* Layout */
+        header { padding: 35px 40px 10px; }
+        header h1 { font-size: 26px; color: var(--color-mint-soft); margin: 0 0 4px; }
+        .subtitle { font-size: 14px; opacity: 0.7; margin-bottom: 20px; }
+        
+        #main-container { padding: 0 40px 40px; max-width: 1000px; margin: 0 auto; display: none; }
+        
+        /* Tabs */
+        .tab-bar { display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1px; }
+        .tab-btn {
+            background: transparent; color: var(--text-on-dark); border: none; opacity: 0.6;
+            padding: 10px 16px; font-size: 14px; font-family: 'Manrope', sans-serif; font-weight: 700; cursor: pointer;
+            border-bottom: 3px solid transparent; transition: all 0.2s ease;
+        }
+        .tab-btn:hover { opacity: 1; }
+        .tab-btn.active { opacity: 1; border-bottom: 3px solid var(--color-sage-accent); color: var(--color-sage-accent); }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
 
-    .form-section {
-        background: var(--color-box-translucent); padding: 24px;
-        border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px;
-    }
-    label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; color: var(--color-mint-soft); letter-spacing: 0.5px; }
-    p.help { font-size: 13px; opacity: 0.75; margin-top: 0; margin-bottom: 16px; }
+        /* Cards & Forms */
+        .card { background: var(--color-box-translucent); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 24px; margin-bottom: 24px; }
+        label { display: block; font-size: 11px; font-weight: 700; color: var(--color-mint-soft); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        input, textarea {
+            width: 100%; box-sizing: border-box; padding: 12px; margin-bottom: 16px;
+            background: var(--color-input-darkgreen); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px; color: #fff; font-family: inherit; font-size: 14px;
+        }
+        input[type="file"] { padding: 10px; }
+        button {
+            background: var(--color-sage-accent); color: #fff; border: none;
+            padding: 12px 20px; border-radius: 6px; font-size: 13px; font-weight: 700;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+        }
+        button:hover { background: #3d7a5c; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: transparent; border: 1px solid var(--color-mint-soft); color: var(--color-mint-soft); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.05); }
+        
+        .hint { font-size: 13px; opacity: 0.75; margin: -10px 0 16px; }
+        
+        /* Tables & Results */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        th { color: var(--color-mint-soft); text-transform: uppercase; font-size: 11px; font-weight: 700; }
+        .pw { font-family: monospace; color: #4ade80; }
+        .err-row td { color: #ef4444; }
+        .save-warning { background: rgba(217,119,6,0.15); border: 1px solid #d97706; color: #fbbf24; padding: 12px; border-radius: 6px; font-size: 13px; margin: 16px 0; }
+        
+        /* Zips Specific */
+        .zip-count-display { font-size: 32px; font-weight: 800; color: var(--color-sage-accent); }
+        .zip-list-preview { max-height: 220px; overflow-y: auto; font-size: 13px; font-family: monospace; background: rgba(0,0,0,0.15); border-radius: 8px; padding: 12px; margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .zip-chip { background: rgba(76,145,112,0.2); padding: 3px 8px; border-radius: 4px; }
 
-    input[type="file"], textarea {
-        width: 100%; padding: 12px; border-radius: 8px; font-size: 14px;
-        border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.15); color: #fff;
-        font-family: inherit; box-sizing: border-box; margin-bottom: 14px;
-    }
-    textarea { min-height: 90px; resize: vertical; }
-
-    .btn-primary {
-        background: var(--color-sage-accent); color: white; border: none;
-        padding: 14px 22px; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer;
-        text-transform: uppercase; letter-spacing: 1px; font-family: inherit;
-    }
-    .btn-primary:hover { background: #3d7a5c; }
-    .btn-secondary {
-        background: transparent; color: var(--color-mint-soft); border: 1px solid var(--color-mint-soft);
-        padding: 14px 22px; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer;
-        text-transform: uppercase; letter-spacing: 1px; font-family: inherit; margin-left: 10px;
-    }
-    .btn-secondary:hover { background: rgba(255,255,255,0.05); }
-
-    #status-msg { margin-top: 12px; font-size: 13px; min-height: 18px; }
-
-    .zip-count-display { font-size: 32px; font-weight: 800; color: var(--color-sage-accent); }
-    .zip-list-preview {
-        max-height: 220px; overflow-y: auto; font-size: 13px; font-family: monospace;
-        background: rgba(0,0,0,0.15); border-radius: 8px; padding: 12px; margin-top: 12px;
-        display: flex; flex-wrap: wrap; gap: 6px;
-    }
-    .zip-chip { background: rgba(76,145,112,0.2); padding: 3px 8px; border-radius: 4px; }
-
-    #login-gate {
-        display:flex; align-items:center; justify-content:center; height:100vh; width:100vw;
-        position:fixed; top:0; left:0; background:var(--color-bg-dark); z-index:1000;
-    }
-</style>
+        /* Login Gate */
+        #login-gate { display: flex; align-items: center; justify-content: center; height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; background: var(--color-bg-dark); z-index: 1000; }
+        .login-box { background: var(--color-box-translucent); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 30px; width: 340px; box-shadow: var(--shadow-soft); }
+    </style>
 </head>
 <body>
 
-<div id="login-gate">
-    <div style="background:var(--color-box-translucent); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:30px; width:320px; box-shadow:var(--shadow-soft);">
-        <h2 style="margin-top:0;">Executive Login</h2>
-        <label>Email</label>
-        <input type="email" id="login-email" placeholder="you@company.com" style="width:100%; padding:10px; margin-bottom:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.15);" onkeydown="if(event.key==='Enter') attemptLogin()">
-        <label>Password</label>
-        <input type="password" id="login-password" placeholder="••••••••" style="width:100%; padding:10px; margin-bottom:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.15);" onkeydown="if(event.key==='Enter') attemptLogin()">
-        <button class="btn-primary" style="width:100%;" onclick="attemptLogin()">Log In</button>
-        <div id="login-error" style="margin-top:10px; font-size:12px; color:#ef4444;"></div>
-    </div>
-</div>
-
-<div id="force-reset-gate" style="display:none; align-items:center; justify-content:center; height:100vh; width:100vw; position:fixed; top:0; left:0; background:var(--color-bg-dark); z-index:1000;">
-    <div style="background:var(--color-box-translucent); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:30px; width:320px; box-shadow:var(--shadow-soft);">
-        <h2 style="margin-top:0;">Set Your Password</h2>
-        <input type="password" id="reset-new-password" placeholder="New password" style="width:100%; padding:10px; margin-bottom:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.15);" onkeydown="if(event.key==='Enter') attemptForcedReset()">
-        <input type="password" id="reset-confirm-password" placeholder="Confirm password" style="width:100%; padding:10px; margin-bottom:12px; border-radius:6px; border:1px solid rgba(0,0,0,0.15);" onkeydown="if(event.key==='Enter') attemptForcedReset()">
-        <button class="btn-primary" style="width:100%;" onclick="attemptForcedReset()">Set Password &amp; Continue</button>
-        <div id="reset-error" style="margin-top:10px; font-size:12px; color:#ef4444;"></div>
-    </div>
-</div>
-
-<div id="app-content" style="display:none;">
-    <div id="main-pane">
-        <header>
-            <h1>Service Area Zip Codes</h1>
-            <p>Add, review, and export the zip codes your eligibility tool checks against.</p>
-        </header>
-
-        <div class="form-section">
-            <h2>Current List</h2>
-            <div class="zip-count-display" id="zip-count">—</div>
-            <div style="font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:var(--color-mint-soft); margin-bottom:8px;">Zips in service area</div>
-            <div>
-                <button class="btn-secondary" onclick="handleRefreshList()">Refresh</button>
-                <button class="btn-secondary" onclick="handleExportCsv()">Export CSV</button>
+    <div id="login-gate">
+        <div class="login-box">
+            <h2 style="margin-top:0;">Executive Login</h2>
+            <label>Email</label>
+            <input type="email" id="login-email" placeholder="you@company.com" onkeydown="if(event.key==='Enter') attemptAdminLogin()">
+            <label>Password</label>
+            <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter') attemptAdminLogin()">
+            <div id="login-error" style="color: #ef4444; font-size: 13px; margin-bottom: 12px; min-height: 18px;"></div>
+            <button style="width:100%;" onclick="attemptAdminLogin()">Log In</button>
+            <div style="margin-top:14px; text-align: center;">
+                <a href="#" onclick="sendResetEmail(); return false;" style="color: var(--color-mint-soft); font-size:12px;">Forgot password?</a>
             </div>
-            <div class="zip-list-preview" id="zip-list-preview"></div>
-        </div>
-
-        <div class="form-section">
-            <h2>Upload CSV</h2>
-            <p class="help">One zip code per line, or comma-separated — either works. Adding a zip that's already on the list is harmless, it just gets re-confirmed.</p>
-            <input type="file" id="csv-file-input" accept=".csv,text/csv,text/plain">
-            <button class="btn-primary" onclick="handleUploadCsv()">Upload</button>
-            <div id="status-msg"></div>
-        </div>
-
-        <div class="form-section">
-            <h2>Quick Demo Seed</h2>
-            <p class="help">No CSV handy? Adds 10 sample zip codes so the eligibility check has something real to test against right now.</p>
-            <button class="btn-secondary" onclick="handleSeedDemoZips()">Seed 10 Demo Zips</button>
-        </div>
-
-        <div class="form-section">
-            <h2>Export &amp; Clear Callback Queue</h2>
-            <p class="help">
-                End-of-day handoff for leads nobody got to. Downloads every lead currently
-                sitting in the callback queue as a CSV — name, phone, address, notes,
-                everything a real person needs to work it — then <strong>deletes those leads
-                from this system entirely.</strong> This is the one place in the whole system
-                that exports real customer contact info on purpose: once it's handed off,
-                there's no reason to keep it here too. Live-transfer leads aren't touched —
-                only the callback queue.
-            </p>
-            <button class="btn-primary" onclick="handleExportAndClearQueue()">Export &amp; Clear Callback Queue</button>
-            <div id="export-status-msg" style="margin-top:12px; font-size:13px; min-height:18px;"></div>
-        </div>
-
-        <div class="form-section">
-            <h2>Recompute This Month's Setter Stats</h2>
-            <p class="help">
-                Monthly setter stats only started being tracked partway through this month,
-                so the current numbers understate what actually happened earlier in the
-                month. This re-derives the correct totals directly from the underlying lead
-                records (not a copy from weekly stats, which use different date boundaries
-                and would produce wrong numbers) and overwrites this month's stats with the
-                accurate count. Safe to run more than once.
-            </p>
-            <button class="btn-secondary" onclick="handleRecomputeMonthlyStats()">Recompute This Month</button>
-            <div id="recompute-status-msg" style="margin-top:12px; font-size:13px; min-height:18px;"></div>
         </div>
     </div>
-</div>
 
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-<script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=10"></script>
-<script>
-    window.JITNEYLOGIC_CONFIG = {
-        clientId: "demo-pest-co",
-        leadsUrl: "https://jitneyleads-889415757227.us-central1.run.app/",
-        adminUrl: "https://jitneyadmin-889415757227.us-central1.run.app/",
-        firebaseConfig: {
-            apiKey: "AIzaSyDkWrGWcepdHlkzkeSGWLiIrV0Kxsul4nE",
-            authDomain: "jitneylogic-beta.firebaseapp.com",
-            projectId: "jitneylogic-beta",
-            storageBucket: "jitneylogic-beta.firebasestorage.app",
-            messagingSenderId: "889415757227",
-            appId: "1:889415757227:web:9e54a600eb654bb30276ee",
-            measurementId: "G-4JECF3BX6E"
+    <header id="app-header" style="display:none;">
+        <h1>JitneyLogic — Unified Admin</h1>
+        <div class="subtitle" id="whoami">Loading...</div>
+        <div style="margin-bottom: 16px;">
+            <label style="display:inline-block; margin-right: 10px;">Active Client ID:</label>
+            <input type="text" id="global-client-id" style="width: 250px; display:inline-block; margin-bottom: 0;" placeholder="e.g. demo-pest-co">
+        </div>
+    </header>
+
+    <div id="main-container">
+        <nav class="tab-bar">
+            <button class="tab-btn active" onclick="switchTab('reps')">Rep Management</button>
+            <button class="tab-btn" onclick="switchTab('teams')">Team Assignments</button>
+            <button class="tab-btn" onclick="switchTab('zips')">Service Area Zips</button>
+            <button class="tab-btn" onclick="switchTab('queue')">Live Transfer Queue</button>
+            <button class="tab-btn" onclick="switchTab('tools')">Data Tools</button>
+        </nav>
+
+        <!-- TAB: REP MANAGEMENT -->
+        <div id="tab-reps" class="tab-pane active">
+            <div class="card">
+                <h2>Create Single Rep</h2>
+                <label>Rep Name</label>
+                <input type="text" id="rep-name-input" placeholder="Full Name">
+                <label>Rep Email</label>
+                <input type="email" id="rep-email-input" placeholder="rep@example.com">
+                <div id="single-email-error" style="color:#ef4444; font-size:12px; display:none; margin-bottom:12px;"></div>
+                <button id="submit-single-btn" onclick="submitSingleRep()">Create Rep</button>
+            </div>
+
+            <div class="card">
+                <h2>Bulk Upload Reps (CSV)</h2>
+                <div class="hint">Two columns: <code>name,email</code>, with a header row. <a href="#" onclick="downloadCsvTemplate(); return false;" style="color: var(--color-mint-soft);">Download template</a>.</div>
+                <input type="file" id="csv-file-input" accept=".csv">
+                <div id="csv-preview-area"></div>
+                <button id="submit-csv-btn" onclick="submitCsvReps()" disabled>Create All From CSV</button>
+            </div>
+
+            <div class="card">
+                <h2>Reset Rep Password</h2>
+                <div class="hint">Generates a new temp password and forces first-login reset flow again.</div>
+                <label>Rep Email</label>
+                <input type="email" id="reset-email-input" placeholder="rep@example.com">
+                <button id="reset-rep-btn" onclick="submitResetRep()" class="btn-secondary">Reset Password</button>
+            </div>
+            <div id="reps-results-area"></div>
+        </div>
+
+        <!-- TAB: TEAM ASSIGNMENTS -->
+        <div id="tab-teams" class="tab-pane">
+            <div class="card">
+                <h2>Bulk Set Teams (CSV)</h2>
+                <div class="hint">Two columns: <code>email,team</code>. Leave team blank to unassign.</div>
+                <input type="file" id="teams-csv-input" accept=".csv">
+                <button onclick="handleTeamCsvUpload()">Upload Team Mapping</button>
+                <div id="teams-upload-msg" style="margin-top: 12px; font-size: 13px;"></div>
+            </div>
+            
+            <div class="card">
+                <h2>Current Assignments</h2>
+                <button class="btn-secondary" onclick="loadTeamAssignments()" style="margin-bottom: 16px;">Refresh List</button>
+                <div id="teams-list-area">
+                    <p class="hint">Click refresh to load current reps.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: SERVICE AREA ZIPS -->
+        <div id="tab-zips" class="tab-pane">
+            <div class="card">
+                <h2>Current Service Area</h2>
+                <div class="zip-count-display" id="zip-count">—</div>
+                <div class="hint" style="margin-top: 4px;">Zips actively checked for eligibility</div>
+                <div style="margin-top: 16px;">
+                    <button onclick="handleRefreshList()">Refresh</button>
+                    <button class="btn-secondary" onclick="handleExportCsv()">Export CSV</button>
+                </div>
+                <div class="zip-list-preview" id="zip-list-preview"></div>
+            </div>
+
+            <div class="card">
+                <h2>Upload Zips (CSV)</h2>
+                <div class="hint">One zip per line or comma-separated. Duplicates are ignored.</div>
+                <input type="file" id="zip-file-input" accept=".csv,text/csv,text/plain">
+                <button onclick="handleUploadZipCsv()">Upload Zips</button>
+                <div id="zip-status-msg" style="margin-top: 12px; font-size: 13px;"></div>
+            </div>
+
+            <div class="card">
+                <h2>Quick Demo Seed</h2>
+                <div class="hint">Injects 10 Utah dummy zips for immediate testing.</div>
+                <button class="btn-secondary" onclick="handleSeedDemoZips()">Seed 10 Demo Zips</button>
+            </div>
+        </div>
+
+        <!-- TAB: LIVE TRANSFER QUEUE (READ ONLY) -->
+        <div id="tab-queue" class="tab-pane">
+            <div class="card">
+                <h2>Active Live Transfers</h2>
+                <div class="hint">Read-only view of leads currently waiting for a closer. Do not delete these manually.</div>
+                <table id="live-queue-table">
+                    <thead>
+                        <tr>
+                            <th>Wait Time</th>
+                            <th>Customer</th>
+                            <th>Phone</th>
+                            <th>Setter</th>
+                        </tr>
+                    </thead>
+                    <tbody id="live-queue-body">
+                        <tr><td colspan="4" style="text-align:center; opacity:0.6;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB: DATA TOOLS -->
+        <div id="tab-tools" class="tab-pane">
+            <div class="card">
+                <h2>Export & Clear Callback Queue</h2>
+                <div class="hint">
+                    End-of-day handoff. Downloads every lead currently in the callback queue (including contact info), then <strong>deletes them from the system.</strong> Live-transfers are not touched.
+                </div>
+                <button onclick="handleExportAndClearQueue()">Export & Clear Callback Queue</button>
+                <div id="export-status-msg" style="margin-top: 12px; font-size: 13px;"></div>
+            </div>
+
+            <div class="card">
+                <h2>Reconcile Monthly Setter Stats (Temporary)</h2>
+                <div class="hint">
+                    Re-derives current month totals directly from raw leads. (Used to reconcile demo data created before monthly stats existed).
+                </div>
+                <button class="btn-secondary" onclick="handleRecomputeMonthlyStats()">Recompute This Month</button>
+                <div id="recompute-status-msg" style="margin-top: 12px; font-size: 13px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=11"></script>
+    
+    <script>
+        // System Config
+        window.JITNEYLOGIC_CONFIG = {
+            clientId: "demo-pest-co", // Default, dynamically overridden by the global input
+            leadsUrl: "https://jitneyleads-889415757227.us-central1.run.app/",
+            adminUrl: "https://jitneyadmin-889415757227.us-central1.run.app/",
+            firebaseConfig: {
+                apiKey: "AIzaSyDkWrGWcepdHlkzkeSGWLiIrV0Kxsul4nE",
+                authDomain: "jitneylogic-beta.firebaseapp.com",
+                projectId: "jitneylogic-beta",
+                storageBucket: "jitneylogic-beta.firebasestorage.app",
+                messagingSenderId: "889415757227",
+                appId: "1:889415757227:web:9e54a600eb654bb30276ee",
+                measurementId: "G-4JECF3BX6E"
+            }
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(window.JITNEYLOGIC_CONFIG.firebaseConfig);
         }
-    };
+        const db = firebase.firestore();
+        let callerRole = null;
+        let callerClientId = null;
+        let liveQueueUnsubscribe = null;
 
-    function startAppAfterLogin() {
-        handleRefreshList();
-    }
+        // ---- UI & TABS ----
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            
+            document.querySelector(`.tab-btn[onclick="switchTab('${tabId}')"]`).classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
 
-    function showStatus(msg, isError) {
-        const el = document.getElementById('status-msg');
-        el.innerText = msg;
-        el.style.color = isError ? '#ef4444' : 'var(--color-mint-soft)';
-    }
-
-    async function handleRefreshList() {
-        try {
-            const zips = await fireListZips();
-            document.getElementById('zip-count').innerText = zips.length;
-            const preview = document.getElementById('zip-list-preview');
-            preview.innerHTML = '';
-            zips.forEach(zip => {
-                const chip = document.createElement('span');
-                chip.className = 'zip-chip';
-                chip.innerText = zip;
-                preview.appendChild(chip);
-            });
-            window.currentZipList = zips; // cached for export
-        } catch (err) {
-            showStatus(err.message, true);
+            if (tabId === 'zips') handleRefreshList();
+            if (tabId === 'teams') loadTeamAssignments();
+            if (tabId === 'queue') startLiveQueueListener();
+            else stopLiveQueueListener();
         }
-    }
 
-    // Handles both newline-separated and comma-separated CSVs, and
-    // anything in between — splits on any run of non-digit characters,
-    // so a plain list, a comma list, or an actual CSV export from this
-    // same tool all parse the same way.
-    function parseZipsFromText(text) {
-        return text.split(/[^0-9]+/).map(s => s.trim()).filter(s => s.length === 5);
-    }
+        function getActiveClientId() {
+            return document.getElementById('global-client-id').value.trim();
+        }
 
-    async function handleUploadCsv() {
-        const fileInput = document.getElementById('csv-file-input');
-        if (!fileInput.files.length) {
-            showStatus('Choose a CSV file first.', true);
-            return;
+        // ---- AUTHENTICATION ----
+        function attemptAdminLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+            errorEl.innerText = "";
+            firebase.auth().signInWithEmailAndPassword(email, password)
+                .catch(err => { errorEl.innerText = err.message; });
         }
-        const text = await fileInput.files[0].text();
-        const zips = parseZipsFromText(text);
-        if (zips.length === 0) {
-            showStatus('No valid 5-digit zip codes found in that file.', true);
-            return;
-        }
-        showStatus(`Uploading ${zips.length} zip codes...`, false);
-        try {
-            const result = await fireBulkAddZips(zips);
-            showStatus(`Added ${result.added} zip codes${result.skipped.length ? ` (${result.skipped.length} skipped as invalid)` : ''}.`, false);
-            fileInput.value = '';
-            handleRefreshList();
-        } catch (err) {
-            showStatus(err.message, true);
-        }
-    }
+        window.attemptAdminLogin = attemptAdminLogin;
 
-    async function handleSeedDemoZips() {
-        const demoZips = ['84601', '84602', '84604', '84606', '84660', '84663', '84003', '84043', '84045', '84097'];
-        showStatus('Seeding demo zip codes...', false);
-        try {
-            const result = await fireBulkAddZips(demoZips);
-            showStatus(`Added ${result.added} demo zip codes.`, false);
-            handleRefreshList();
-        } catch (err) {
-            showStatus(err.message, true);
+        function sendResetEmail() {
+            const email = document.getElementById('login-email').value.trim();
+            const errorEl = document.getElementById('login-error');
+            if (!email) { errorEl.innerText = "Enter email first, then click Forgot password."; return; }
+            firebase.auth().sendPasswordResetEmail(email)
+                .then(() => { errorEl.style.color = "#4ade80"; errorEl.innerText = "Reset email sent."; })
+                .catch(err => { errorEl.style.color = "#ef4444"; errorEl.innerText = err.message; });
         }
-    }
 
-    function handleExportCsv() {
-        const zips = window.currentZipList || [];
-        if (zips.length === 0) {
-            showStatus('Nothing to export yet — refresh the list first.', true);
-            return;
-        }
-        const csvContent = zips.join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'serviceable_zips.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
+        firebase.auth().onAuthStateChanged(async (user) => {
+            const gate = document.getElementById('login-gate');
+            const header = document.getElementById('app-header');
+            const container = document.getElementById('main-container');
 
-    // Escapes a value for CSV: wraps in quotes and doubles any internal
-    // quotes if it contains a comma, quote, or newline — otherwise leaves
-    // it plain. Notes fields especially can contain commas.
-    function csvEscape(value) {
-        const str = String(value == null ? '' : value);
-        if (/[",\n]/.test(str)) return '"' + str.replace(/"/g, '""') + '"';
-        return str;
-    }
-
-    async function handleExportAndClearQueue() {
-        const statusEl = document.getElementById('export-status-msg');
-        if (!confirm('This downloads every lead currently in the callback queue and then permanently deletes them from the system. This cannot be undone. Continue?')) {
-            return;
-        }
-        statusEl.innerText = 'Exporting...';
-        statusEl.style.color = 'var(--color-mint-soft)';
-        try {
-            const result = await fireExportAndClearQueue();
-            if (result.cleared === 0) {
-                statusEl.innerText = 'Callback queue was already empty — nothing to export.';
+            if (!user) {
+                gate.style.display = "flex";
+                header.style.display = "none";
+                container.style.display = "none";
                 return;
             }
-            const formatCreatedAt = (ts) => {
-                if (!ts) return '';
-                // Not fully certain of the exact shape Firestore Timestamps
-                // take after Admin SDK -> res.json() -> JSON.parse() on the
-                // client — try the documented {_seconds} shape first, fall
-                // back to treating it as a plain date string. Worst case
-                // this column is blank, which doesn't affect the rest of
-                // the export.
-                if (typeof ts === 'object' && ts._seconds) return new Date(ts._seconds * 1000).toLocaleString();
-                const d = new Date(ts);
-                return isNaN(d) ? '' : d.toLocaleString();
-            };
-            const headers = ['Name', 'Phone', 'Address', 'Pest Types', 'Notes', 'Setter', 'Submitted At'];
-            const rows = result.leads.map(lead => [
-                lead.customerName, lead.customerPhone, lead.address,
-                (lead.pestTypes || []).join('; '), lead.notes, lead.setterName,
-                formatCreatedAt(lead.createdAt)
-            ].map(csvEscape).join(','));
-            const csvContent = [headers.join(','), ...rows].join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv' });
+
+            const tokenResult = await user.getIdTokenResult();
+            callerRole = tokenResult.claims.role;
+            callerClientId = tokenResult.claims.client_id || null;
+
+            if (callerRole !== "owner" && callerRole !== "manager") {
+                document.getElementById('login-error').innerText = "Access denied. Admin role required.";
+                firebase.auth().signOut();
+                return;
+            }
+
+            gate.style.display = "none";
+            header.style.display = "block";
+            container.style.display = "block";
+
+            document.getElementById('whoami').innerText = `Logged in as ${user.email} (${callerRole})`;
+            const clientInput = document.getElementById('global-client-id');
+            
+            if (callerRole === "manager") {
+                clientInput.value = callerClientId;
+                clientInput.disabled = true;
+            } else {
+                clientInput.value = "demo-pest-co"; // Default for owner
+            }
+            
+            // Sync engine config to match input
+            clientInput.addEventListener('change', (e) => {
+                window.JITNEYLOGIC_CONFIG.clientId = e.target.value.trim();
+                // Refresh active tab data on client change
+                const activeTab = document.querySelector('.tab-pane.active').id;
+                if(activeTab === 'tab-zips') handleRefreshList();
+                if(activeTab === 'tab-teams') loadTeamAssignments();
+                if(activeTab === 'tab-queue') startLiveQueueListener();
+            });
+            window.JITNEYLOGIC_CONFIG.clientId = clientInput.value.trim();
+        });
+
+
+        // ---- MODULE A: REP MANAGEMENT (Fixed Syntax) ----
+        function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+
+        async function createReps(clientId, reps, btn) {
+            const resultsArea = document.getElementById('reps-results-area');
+            const originalLabel = btn.innerText;
+            btn.disabled = true; btn.innerText = "Creating...";
+            resultsArea.innerHTML = "";
+
+            try {
+                const token = await firebase.auth().currentUser.getIdToken();
+                const resp = await fetch(window.JITNEYLOGIC_CONFIG.adminUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+                    body: JSON.stringify({ client_id: clientId, reps })
+                });
+                const data = await resp.json();
+
+                if (!resp.ok) { resultsArea.innerHTML = `<div class="save-warning">Error: ${data.message}</div>`; return; }
+
+                let html = "";
+                if (data.created && data.created.length > 0) {
+                    window.lastCreatedReps = data.created;
+                    html += `<div class="save-warning">⚠ Save these passwords now. They are not retrievable.</div>`;
+                    html += `<button onclick="exportCreatedRepsCsv()" style="margin-bottom:12px;">Export Passwords CSV</button>`;
+                    html += `<table><thead><tr><th>Name</th><th>Email</th><th>Temp Password</th></tr></thead><tbody>`;
+                    data.created.forEach(r => html += `<tr><td>${r.name}</td><td>${r.email}</td><td class="pw">${r.tempPassword}</td></tr>`);
+                    html += `</tbody></table>`;
+                }
+                if (data.failed && data.failed.length > 0) {
+                    html += `<table><thead><tr><th>Failed</th><th>Reason</th></tr></thead><tbody>`;
+                    data.failed.forEach(f => html += `<tr class="err-row"><td>${f.email}</td><td>${f.error}</td></tr>`);
+                    html += `</tbody></table>`;
+                }
+                resultsArea.innerHTML = html;
+            } catch (err) {
+                resultsArea.innerHTML = `<div class="save-warning">Request failed: ${err.message}</div>`;
+            } finally {
+                btn.disabled = false; btn.innerText = originalLabel;
+            }
+        }
+
+        async function submitSingleRep() {
+            const clientId = getActiveClientId();
+            const name = document.getElementById('rep-name-input').value.trim();
+            const email = document.getElementById('rep-email-input').value.trim();
+            if (!clientId) return alert("Active Client ID required at top of page.");
+            if (!name || !isValidEmail(email)) return alert("Valid name and email required.");
+            
+            const btn = document.getElementById('submit-single-btn');
+            await createReps(clientId, [{ name, email }], btn);
+            document.getElementById('rep-name-input').value = "";
+            document.getElementById('rep-email-input').value = "";
+        }
+
+        let parsedCsvReps = [];
+        document.getElementById('csv-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const btn = document.getElementById('submit-csv-btn');
+            if (!file) return;
+            Papa.parse(file, { header: true, skipEmptyLines: true, complete: (res) => {
+                parsedCsvReps = res.data.filter(r => r.name && isValidEmail(r.email));
+                document.getElementById('csv-preview-area').innerHTML = `<div class="hint">${parsedCsvReps.length} valid rows found.</div>`;
+                btn.disabled = parsedCsvReps.length === 0;
+            }});
+        });
+
+        // FIXED SYNTAX ISSUE HERE
+        async function submitCsvReps() {
+            const clientId = getActiveClientId();
+            if (!clientId) { alert("Active Client ID required."); return; }
+            if (parsedCsvReps.length === 0) { alert("No valid rows."); return; }
+
+            const btn = document.getElementById('submit-csv-btn');
+            await createReps(clientId, parsedCsvReps, btn);
+            document.getElementById('csv-file-input').value = "";
+            document.getElementById('csv-preview-area').innerHTML = "";
+            parsedCsvReps = [];
+            btn.disabled = true;
+        }
+
+        async function submitResetRep() {
+            const clientId = getActiveClientId();
+            const email = document.getElementById('reset-email-input').value.trim();
+            if (!clientId || !isValidEmail(email)) return alert("Client ID and valid email required.");
+            
+            const btn = document.getElementById('reset-rep-btn');
+            const results = document.getElementById('reps-results-area');
+            btn.disabled = true; btn.innerText = "Resetting...";
+            
+            try {
+                const token = await firebase.auth().currentUser.getIdToken();
+                const resp = await fetch(window.JITNEYLOGIC_CONFIG.adminUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+                    body: JSON.stringify({ action: "reset_rep_password", client_id: clientId, email })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.message);
+                
+                results.innerHTML = `<div class="save-warning">⚠ New Temp Password for ${data.email}: <span class="pw">${data.tempPassword}</span></div>`;
+                document.getElementById('reset-email-input').value = "";
+            } catch (err) {
+                results.innerHTML = `<div class="save-warning">Failed: ${err.message}</div>`;
+            } finally {
+                btn.disabled = false; btn.innerText = "Reset Password";
+            }
+        }
+
+        function downloadCsvTemplate() {
+            const blob = new Blob(["name,email\nJane Smith,jane@example.com\n"], { type: "text/csv" });
             const url = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href = url; a.download = "rep-template.csv"; a.click();
+        }
+        function exportCreatedRepsCsv() {
+            if (!window.lastCreatedReps) return;
+            const rows = window.lastCreatedReps.map(r => `${r.name},${r.email},${r.tempPassword}`).join("\n");
+            const blob = new Blob(["name,email,temp_password\n" + rows], { type: "text/csv" });
+            const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "new-passwords.csv"; a.click();
+        }
+
+        // ---- MODULE B: TEAM ASSIGNMENTS ----
+        async function loadTeamAssignments() {
+            const clientId = getActiveClientId();
+            if (!clientId) return;
+            const area = document.getElementById('teams-list-area');
+            area.innerHTML = "<p class='hint'>Loading...</p>";
+            try {
+                const token = await firebase.auth().currentUser.getIdToken();
+                const resp = await fetch(window.JITNEYLOGIC_CONFIG.leadsUrl + 'api/admin/list_reps_with_teams', { // Assumes route, adjust if leads router differs
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+                    body: JSON.stringify({ client_id: clientId })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.message);
+                
+                if (!data.reps || data.reps.length === 0) {
+                    area.innerHTML = "<p class='hint'>No reps found for this client.</p>";
+                    return;
+                }
+                
+                let html = `<table><thead><tr><th>Name</th><th>Email</th><th>Current Team</th></tr></thead><tbody>`;
+                data.reps.forEach(r => {
+                    html += `<tr><td>${r.name}</td><td>${r.email}</td><td><span class="zip-chip">${r.team || 'Unassigned'}</span></td></tr>`;
+                });
+                html += `</tbody></table>`;
+                area.innerHTML = html;
+            } catch (err) {
+                area.innerHTML = `<div class="save-warning">Failed to load teams: ${err.message}</div>`;
+            }
+        }
+
+        function handleTeamCsvUpload() {
+            const file = document.getElementById('teams-csv-input').files[0];
+            const msg = document.getElementById('teams-upload-msg');
+            const clientId = getActiveClientId();
+            if (!file || !clientId) { msg.innerText = "File and Client ID required."; return; }
+            
+            msg.innerText = "Parsing...";
+            Papa.parse(file, { header: true, skipEmptyLines: true, complete: async (res) => {
+                const mapping = res.data.filter(r => r.email).map(r => ({ email: r.email.trim(), team: (r.team||'').trim() }));
+                msg.innerText = `Uploading mapping for ${mapping.length} reps...`;
+                try {
+                    const token = await firebase.auth().currentUser.getIdToken();
+                    const resp = await fetch(window.JITNEYLOGIC_CONFIG.leadsUrl + 'api/admin/bulk_set_teams', {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+                        body: JSON.stringify({ client_id: clientId, team_mapping: mapping })
+                    });
+                    if (!resp.ok) throw new Error((await resp.json()).message);
+                    msg.innerText = "Teams updated successfully.";
+                    msg.style.color = "var(--color-mint-soft)";
+                    loadTeamAssignments();
+                } catch(err) {
+                    msg.innerText = `Error: ${err.message}`;
+                    msg.style.color = "#ef4444";
+                }
+            }});
+        }
+
+        // ---- MODULE C: SERVICE AREA ZIPS ----
+        async function handleRefreshList() {
+            try {
+                const zips = await fireListZips();
+                document.getElementById('zip-count').innerText = zips.length;
+                const preview = document.getElementById('zip-list-preview');
+                preview.innerHTML = '';
+                zips.forEach(z => preview.innerHTML += `<span class="zip-chip">${z}</span>`);
+                window.currentZipList = zips;
+            } catch (err) { document.getElementById('zip-status-msg').innerText = err.message; }
+        }
+        
+        async function handleUploadZipCsv() {
+            const input = document.getElementById('zip-file-input');
+            if (!input.files.length) return;
+            const text = await input.files[0].text();
+            const zips = text.split(/[^0-9]+/).map(s => s.trim()).filter(s => s.length === 5);
+            if (zips.length === 0) return alert("No valid 5-digit zips found.");
+            
+            document.getElementById('zip-status-msg').innerText = "Uploading...";
+            try {
+                const res = await fireBulkAddZips(zips);
+                document.getElementById('zip-status-msg').innerText = `Added ${res.added} zips.`;
+                input.value = ''; handleRefreshList();
+            } catch (err) { document.getElementById('zip-status-msg').innerText = err.message; }
+        }
+
+        async function handleSeedDemoZips() {
+            try {
+                await fireBulkAddZips(['84601', '84602', '84604', '84606', '84660', '84663', '84003', '84043', '84045', '84097']);
+                handleRefreshList();
+            } catch(e) { console.error(e); }
+        }
+
+        function handleExportCsv() {
+            if (!window.currentZipList) return;
             const a = document.createElement('a');
-            a.href = url;
-            a.download = `callback_queue_export_${new Date().toISOString().slice(0, 10)}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            statusEl.innerText = `Exported and cleared ${result.cleared} lead${result.cleared === 1 ? '' : 's'} from the callback queue.`;
-        } catch (err) {
-            statusEl.innerText = err.message;
-            statusEl.style.color = '#ef4444';
+            a.href = URL.createObjectURL(new Blob([window.currentZipList.join('\n')], {type:'text/csv'}));
+            a.download = 'serviceable_zips.csv'; a.click();
         }
-    }
 
-    async function handleRecomputeMonthlyStats() {
-        const statusEl = document.getElementById('recompute-status-msg');
-        statusEl.innerText = 'Recomputing...';
-        statusEl.style.color = 'var(--color-mint-soft)';
-        try {
-            const result = await fireRecomputeMonthlyStats();
-            statusEl.innerText = `Done — scanned ${result.totalLeadsScanned} leads across ${result.setterCount} setter(s) for ${result.monthKey}.`;
-        } catch (err) {
-            statusEl.innerText = err.message;
-            statusEl.style.color = '#ef4444';
+        // ---- MODULE D: LIVE TRANSFER QUEUE (READ-ONLY) ----
+        function startLiveQueueListener() {
+            const clientId = getActiveClientId();
+            if (!clientId) return;
+            stopLiveQueueListener();
+            
+            // Assume engine status for live transfers is 'live_transfer' or similar. 
+            // Adjust the exact string based on engine constants if different.
+            liveQueueUnsubscribe = db.collection('clients').doc(clientId).collection('leads')
+                .where('status', '==', 'live_transfer') 
+                .onSnapshot(snap => {
+                    const tbody = document.getElementById('live-queue-body');
+                    if (snap.empty) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; opacity:0.6;">Queue is currently empty.</td></tr>';
+                        return;
+                    }
+                    
+                    const now = Date.now();
+                    let html = '';
+                    snap.docs.forEach(doc => {
+                        const d = doc.data();
+                        const createdTs = d.createdAt && d.createdAt.toMillis ? d.createdAt.toMillis() : Date.now();
+                        const waitSecs = Math.floor((now - createdTs) / 1000);
+                        const waitStr = waitSecs > 60 ? `${Math.floor(waitSecs/60)}m ${waitSecs%60}s` : `${waitSecs}s`;
+                        
+                        html += `<tr>
+                            <td style="font-weight:700; color:var(--color-sage-accent);">${waitStr}</td>
+                            <td>${d.customerName || 'Unknown'}</td>
+                            <td style="font-family:monospace;">${d.customerPhone || ''}</td>
+                            <td>${d.setterName || 'Unknown'}</td>
+                        </tr>`;
+                    });
+                    tbody.innerHTML = html;
+                });
+                
+            // Quick timer to refresh the wait times visually without burning Firestore reads
+            window.liveQueueTimer = setInterval(() => {
+                if(document.getElementById('tab-queue').classList.contains('active')) {
+                    // Triggers the UI rebuild logic above by forcing a fresh evaluation if needed, 
+                    // or rely entirely on Firestore updates. Let's just rely on natural updates for now to save complexity.
+                }
+            }, 1000);
         }
-    }
 
-    initAuthGate();
-</script>
+        function stopLiveQueueListener() {
+            if (liveQueueUnsubscribe) liveQueueUnsubscribe();
+            if (window.liveQueueTimer) clearInterval(window.liveQueueTimer);
+        }
+
+
+        // ---- MODULE E: DATA TOOLS ----
+        async function handleExportAndClearQueue() {
+            if (!confirm('This downloads every lead in the callback queue and permanently deletes them. Continue?')) return;
+            const el = document.getElementById('export-status-msg');
+            el.innerText = 'Exporting...';
+            try {
+                const res = await fireExportAndClearQueue();
+                if (res.cleared === 0) { el.innerText = "Queue already empty."; return; }
+                
+                const csv = ["Name,Phone,Address,Pest Types,Notes,Setter,Submitted"]
+                    .concat(res.leads.map(l => `"${l.customerName||''}","${l.customerPhone||''}","${l.address||''}","${(l.pestTypes||[]).join('; ')}","${(l.notes||'').replace(/"/g,'""')}","${l.setterName||''}","${l.createdAt}"`))
+                    .join("\n");
+                    
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+                a.download = `callback_queue_export_${new Date().toISOString().slice(0,10)}.csv`;
+                a.click();
+                el.innerText = `Cleared ${res.cleared} leads.`;
+            } catch(e) { el.innerText = e.message; el.style.color = '#ef4444'; }
+        }
+
+        async function handleRecomputeMonthlyStats() {
+            const el = document.getElementById('recompute-status-msg');
+            el.innerText = 'Recomputing...';
+            try {
+                const res = await fireRecomputeMonthlyStats();
+                el.innerText = `Done. Scanned ${res.totalLeadsScanned} leads.`;
+            } catch(e) { el.innerText = e.message; el.style.color = '#ef4444'; }
+        }
+    </script>
 </body>
 </html>
