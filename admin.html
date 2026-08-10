@@ -24,18 +24,16 @@
         h1, h2, h3 { font-family: 'Fraunces', serif; font-weight: 500; }
         h2 { margin-top: 0; margin-bottom: 20px; font-size: 19px; color: var(--color-mint-soft); border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
         
-        /* Layout */
         header { padding: 35px 40px 10px; }
         header h1 { font-size: 26px; color: var(--color-mint-soft); margin: 0 0 4px; }
         .subtitle { font-size: 14px; opacity: 0.7; margin-bottom: 20px; }
         
         #main-container { padding: 0 40px 40px; max-width: 1000px; margin: 0 auto; display: none; }
         
-        /* Tabs */
         .tab-bar { display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1px; }
         .tab-btn {
             background: transparent; color: var(--text-on-dark); border: none; opacity: 0.6;
-            padding: 10px 16px; font-size: 14px; font-family: 'Manrope', sans-serif; font-weight: 700; cursor: pointer;
+            padding: 10px 16px; font-size: 14px; font-weight: 700; cursor: pointer;
             border-bottom: 3px solid transparent; transition: all 0.2s ease;
         }
         .tab-btn:hover { opacity: 1; }
@@ -43,7 +41,6 @@
         .tab-pane { display: none; }
         .tab-pane.active { display: block; }
 
-        /* Cards & Forms */
         .card { background: var(--color-box-translucent); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 24px; margin-bottom: 24px; }
         label { display: block; font-size: 11px; font-weight: 700; color: var(--color-mint-soft); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
         input, textarea {
@@ -64,7 +61,6 @@
         
         .hint { font-size: 13px; opacity: 0.75; margin: -10px 0 16px; }
         
-        /* Tables & Results */
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
         th, td { text-align: left; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
         th { color: var(--color-mint-soft); text-transform: uppercase; font-size: 11px; font-weight: 700; }
@@ -72,12 +68,10 @@
         .err-row td { color: #ef4444; }
         .save-warning { background: rgba(217,119,6,0.15); border: 1px solid #d97706; color: #fbbf24; padding: 12px; border-radius: 6px; font-size: 13px; margin: 16px 0; }
         
-        /* Zips Specific */
         .zip-count-display { font-size: 32px; font-weight: 800; color: var(--color-sage-accent); }
         .zip-list-preview { max-height: 220px; overflow-y: auto; font-size: 13px; font-family: monospace; background: rgba(0,0,0,0.15); border-radius: 8px; padding: 12px; margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
         .zip-chip { background: rgba(76,145,112,0.2); padding: 3px 8px; border-radius: 4px; }
 
-        /* Login Gate */
         #login-gate { display: flex; align-items: center; justify-content: center; height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; background: var(--color-bg-dark); z-index: 1000; }
         .login-box { background: var(--color-box-translucent); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 30px; width: 340px; box-shadow: var(--shadow-soft); }
     </style>
@@ -104,7 +98,7 @@
         <div class="subtitle" id="whoami">Loading...</div>
         <div style="margin-bottom: 16px;">
             <label style="display:inline-block; margin-right: 10px;">Active Client ID:</label>
-            <input type="text" id="global-client-id" style="width: 250px; display:inline-block; margin-bottom: 0;" placeholder="e.g. demo-pest-co">
+            <span id="client-id-container"></span>
         </div>
     </header>
 
@@ -186,12 +180,6 @@
                 <button onclick="handleUploadZipCsv()">Upload Zips</button>
                 <div id="zip-status-msg" style="margin-top: 12px; font-size: 13px;"></div>
             </div>
-
-            <div class="card">
-                <h2>Quick Demo Seed</h2>
-                <div class="hint">Injects 10 Utah dummy zips for immediate testing.</div>
-                <button class="btn-secondary" onclick="handleSeedDemoZips()">Seed 10 Demo Zips</button>
-            </div>
         </div>
 
         <!-- TAB: LIVE TRANSFER QUEUE (READ ONLY) -->
@@ -225,15 +213,6 @@
                 <button onclick="handleExportAndClearQueue()">Export & Clear Callback Queue</button>
                 <div id="export-status-msg" style="margin-top: 12px; font-size: 13px;"></div>
             </div>
-
-            <div class="card">
-                <h2>Reconcile Monthly Setter Stats (Temporary)</h2>
-                <div class="hint">
-                    Re-derives current month totals directly from raw leads. (Used to reconcile demo data created before monthly stats existed).
-                </div>
-                <button class="btn-secondary" onclick="handleRecomputeMonthlyStats()">Recompute This Month</button>
-                <div id="recompute-status-msg" style="margin-top: 12px; font-size: 13px;"></div>
-            </div>
         </div>
     </div>
 
@@ -247,7 +226,7 @@
     <script>
         // System Config
         window.JITNEYLOGIC_CONFIG = {
-            clientId: "demo-pest-co", // Default, dynamically overridden by the global input
+            clientId: "demo-pest-co",
             leadsUrl: "https://jitneyleads-889415757227.us-central1.run.app/",
             adminUrl: "https://jitneyadmin-889415757227.us-central1.run.app/",
             firebaseConfig: {
@@ -284,7 +263,7 @@
         }
 
         function getActiveClientId() {
-            return document.getElementById('global-client-id').value.trim();
+            return window.JITNEYLOGIC_CONFIG.clientId;
         }
 
         // ---- AUTHENTICATION ----
@@ -334,29 +313,27 @@
             container.style.display = "block";
 
             document.getElementById('whoami').innerText = `Logged in as ${user.email} (${callerRole})`;
-            const clientInput = document.getElementById('global-client-id');
+            const clientContainer = document.getElementById('client-id-container');
             
             if (callerRole === "manager") {
-                clientInput.value = callerClientId;
-                clientInput.disabled = true;
+                clientContainer.innerHTML = `<span style="font-weight: 700; color: #fff;">${callerClientId}</span>`;
+                window.JITNEYLOGIC_CONFIG.clientId = callerClientId;
             } else {
-                clientInput.value = "demo-pest-co"; // Default for owner
+                clientContainer.innerHTML = `<input type="text" id="global-client-id" style="width: 250px; display:inline-block; margin-bottom: 0;" placeholder="e.g. demo-pest-co" value="demo-pest-co">`;
+                const clientInput = document.getElementById('global-client-id');
+                window.JITNEYLOGIC_CONFIG.clientId = clientInput.value.trim();
+                clientInput.addEventListener('change', (e) => {
+                    window.JITNEYLOGIC_CONFIG.clientId = e.target.value.trim();
+                    const activeTab = document.querySelector('.tab-pane.active').id;
+                    if(activeTab === 'tab-zips') handleRefreshList();
+                    if(activeTab === 'tab-teams') loadTeamAssignments();
+                    if(activeTab === 'tab-queue') startLiveQueueListener();
+                });
             }
-            
-            // Sync engine config to match input
-            clientInput.addEventListener('change', (e) => {
-                window.JITNEYLOGIC_CONFIG.clientId = e.target.value.trim();
-                // Refresh active tab data on client change
-                const activeTab = document.querySelector('.tab-pane.active').id;
-                if(activeTab === 'tab-zips') handleRefreshList();
-                if(activeTab === 'tab-teams') loadTeamAssignments();
-                if(activeTab === 'tab-queue') startLiveQueueListener();
-            });
-            window.JITNEYLOGIC_CONFIG.clientId = clientInput.value.trim();
         });
 
 
-        // ---- MODULE A: REP MANAGEMENT (Fixed Syntax) ----
+        // ---- MODULE A: REP MANAGEMENT ----
         function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
 
         async function createReps(clientId, reps, btn) {
@@ -423,7 +400,6 @@
             }});
         });
 
-        // FIXED SYNTAX ISSUE HERE
         async function submitCsvReps() {
             const clientId = getActiveClientId();
             if (!clientId) { alert("Active Client ID required."); return; }
@@ -485,13 +461,21 @@
             area.innerHTML = "<p class='hint'>Loading...</p>";
             try {
                 const token = await firebase.auth().currentUser.getIdToken();
-                const resp = await fetch(window.JITNEYLOGIC_CONFIG.leadsUrl + 'api/admin/list_reps_with_teams', { // Assumes route, adjust if leads router differs
+                const resp = await fetch(window.JITNEYLOGIC_CONFIG.leadsUrl + 'api/admin/list_reps_with_teams', {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
                     body: JSON.stringify({ client_id: clientId })
                 });
+                if (!resp.ok) {
+                    const contentType = resp.headers.get("content-type");
+                    if (contentType && contentType.indexOf("application/json") !== -1) {
+                        const data = await resp.json();
+                        throw new Error(data.message);
+                    } else {
+                        throw new Error("Server returned an invalid response. Verify jitneyleads is deployed correctly.");
+                    }
+                }
                 const data = await resp.json();
-                if (!resp.ok) throw new Error(data.message);
                 
                 if (!data.reps || data.reps.length === 0) {
                     area.innerHTML = "<p class='hint'>No reps found for this client.</p>";
@@ -564,30 +548,14 @@
             } catch (err) { document.getElementById('zip-status-msg').innerText = err.message; }
         }
 
-        async function handleSeedDemoZips() {
-            try {
-                await fireBulkAddZips(['84601', '84602', '84604', '84606', '84660', '84663', '84003', '84043', '84045', '84097']);
-                handleRefreshList();
-            } catch(e) { console.error(e); }
-        }
-
-        function handleExportCsv() {
-            if (!window.currentZipList) return;
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(new Blob([window.currentZipList.join('\n')], {type:'text/csv'}));
-            a.download = 'serviceable_zips.csv'; a.click();
-        }
-
         // ---- MODULE D: LIVE TRANSFER QUEUE (READ-ONLY) ----
         function startLiveQueueListener() {
             const clientId = getActiveClientId();
             if (!clientId) return;
             stopLiveQueueListener();
             
-            // Assume engine status for live transfers is 'live_transfer' or similar. 
-            // Adjust the exact string based on engine constants if different.
             liveQueueUnsubscribe = db.collection('clients').doc(clientId).collection('leads')
-                .where('status', '==', 'live_transfer') 
+                .where('status', '==', 'live') 
                 .onSnapshot(snap => {
                     const tbody = document.getElementById('live-queue-body');
                     if (snap.empty) {
@@ -613,12 +581,8 @@
                     tbody.innerHTML = html;
                 });
                 
-            // Quick timer to refresh the wait times visually without burning Firestore reads
             window.liveQueueTimer = setInterval(() => {
-                if(document.getElementById('tab-queue').classList.contains('active')) {
-                    // Triggers the UI rebuild logic above by forcing a fresh evaluation if needed, 
-                    // or rely entirely on Firestore updates. Let's just rely on natural updates for now to save complexity.
-                }
+                // UI refresh for the timer can be handled naturally via snap updates
             }, 1000);
         }
 
@@ -626,7 +590,6 @@
             if (liveQueueUnsubscribe) liveQueueUnsubscribe();
             if (window.liveQueueTimer) clearInterval(window.liveQueueTimer);
         }
-
 
         // ---- MODULE E: DATA TOOLS ----
         async function handleExportAndClearQueue() {
@@ -646,15 +609,6 @@
                 a.download = `callback_queue_export_${new Date().toISOString().slice(0,10)}.csv`;
                 a.click();
                 el.innerText = `Cleared ${res.cleared} leads.`;
-            } catch(e) { el.innerText = e.message; el.style.color = '#ef4444'; }
-        }
-
-        async function handleRecomputeMonthlyStats() {
-            const el = document.getElementById('recompute-status-msg');
-            el.innerText = 'Recomputing...';
-            try {
-                const res = await fireRecomputeMonthlyStats();
-                el.innerText = `Done. Scanned ${res.totalLeadsScanned} leads.`;
             } catch(e) { el.innerText = e.message; el.style.color = '#ef4444'; }
         }
     </script>
