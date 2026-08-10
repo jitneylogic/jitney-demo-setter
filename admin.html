@@ -453,37 +453,23 @@
             const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "new-passwords.csv"; a.click();
         }
 
-        // ---- MODULE B: TEAM ASSIGNMENTS ----
+      // ---- MODULE B: TEAM ASSIGNMENTS ----
         async function loadTeamAssignments() {
             const clientId = getActiveClientId();
             if (!clientId) return;
             const area = document.getElementById('teams-list-area');
             area.innerHTML = "<p class='hint'>Loading...</p>";
             try {
-                const token = await firebase.auth().currentUser.getIdToken();
-                const resp = await fetch(window.JITNEYLOGIC_CONFIG.leadsUrl + 'api/admin/list_reps_with_teams', {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-                    body: JSON.stringify({ client_id: clientId })
-                });
-                if (!resp.ok) {
-                    const contentType = resp.headers.get("content-type");
-                    if (contentType && contentType.indexOf("application/json") !== -1) {
-                        const data = await resp.json();
-                        throw new Error(data.message);
-                    } else {
-                        throw new Error("Server returned an invalid response. Verify jitneyleads is deployed correctly.");
-                    }
-                }
-                const data = await resp.json();
+                // Using the engine's built-in function instead of a broken fetch!
+                const reps = await fireListRepsWithTeams();
                 
-                if (!data.reps || data.reps.length === 0) {
+                if (!reps || reps.length === 0) {
                     area.innerHTML = "<p class='hint'>No reps found for this client.</p>";
                     return;
                 }
                 
                 let html = `<table><thead><tr><th>Name</th><th>Email</th><th>Current Team</th></tr></thead><tbody>`;
-                data.reps.forEach(r => {
+                reps.forEach(r => {
                     html += `<tr><td>${r.name}</td><td>${r.email}</td><td><span class="zip-chip">${r.team || 'Unassigned'}</span></td></tr>`;
                 });
                 html += `</tbody></table>`;
@@ -504,13 +490,8 @@
                 const mapping = res.data.filter(r => r.email).map(r => ({ email: r.email.trim(), team: (r.team||'').trim() }));
                 msg.innerText = `Uploading mapping for ${mapping.length} reps...`;
                 try {
-                    const token = await firebase.auth().currentUser.getIdToken();
-                    const resp = await fetch(window.JITNEYLOGIC_CONFIG.leadsUrl + 'api/admin/bulk_set_teams', {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-                        body: JSON.stringify({ client_id: clientId, team_mapping: mapping })
-                    });
-                    if (!resp.ok) throw new Error((await resp.json()).message);
+                    // Using the engine's built-in function!
+                    await fireBulkSetTeams(mapping);
                     msg.innerText = "Teams updated successfully.";
                     msg.style.color = "var(--color-mint-soft)";
                     loadTeamAssignments();
@@ -549,14 +530,16 @@
         }
 
         // ---- MODULE D: LIVE TRANSFER QUEUE (READ-ONLY) ----
-        function startLiveQueueListener() {
+       function startLiveQueueListener() {
             const clientId = getActiveClientId();
             if (!clientId) return;
             stopLiveQueueListener();
             
+            // Fixed: "transferring" is the exact string the engine writes for live leads
             liveQueueUnsubscribe = db.collection('clients').doc(clientId).collection('leads')
-                .where('status', '==', 'live') 
+                .where('status', '==', 'transferring') 
                 .onSnapshot(snap => {
+// ... rest of the function remains the same
                     const tbody = document.getElementById('live-queue-body');
                     if (snap.empty) {
                         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; opacity:0.6;">Queue is currently empty.</td></tr>';
