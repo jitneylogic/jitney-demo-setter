@@ -1634,48 +1634,6 @@ async function fireBulkSetTeams(assignments) {
 }
 window.fireBulkSetTeams = fireBulkSetTeams;
 
-async function fireListTeams() {
-    const config = getConfig();
-    const authHeader = await getAuthHeader();
-    const resp = await fetch(config.leadsUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader },
-        body: JSON.stringify({ action: "list_teams", clientId: config.clientId })
-    });
-    const data = await resp.json();
-    if (!resp.ok || data.status !== "success") throw new Error(data.message || "Couldn't load the team roster.");
-    return data.teams;
-}
-window.fireListTeams = fireListTeams;
-
-async function fireCreateTeam(teamName) {
-    const config = getConfig();
-    const authHeader = await getAuthHeader();
-    const resp = await fetch(config.leadsUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader },
-        body: JSON.stringify({ action: "create_team", clientId: config.clientId, teamName })
-    });
-    const data = await resp.json();
-    if (!resp.ok || data.status !== "success") throw new Error(data.message || "Couldn't create that team.");
-    return data;
-}
-window.fireCreateTeam = fireCreateTeam;
-
-async function fireDeleteTeam(teamName) {
-    const config = getConfig();
-    const authHeader = await getAuthHeader();
-    const resp = await fetch(config.leadsUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader },
-        body: JSON.stringify({ action: "delete_team", clientId: config.clientId, teamName })
-    });
-    const data = await resp.json();
-    if (!resp.ok || data.status !== "success") throw new Error(data.message || "Couldn't remove that team.");
-    return data;
-}
-window.fireDeleteTeam = fireDeleteTeam;
-
 // Pure client-side grouping — combines whatever stats doc is already
 // being rendered (daily/weekly/monthly, all already have rep_breakdown
 // with real per-rep numbers) with the rep_teams mapping, at render time.
