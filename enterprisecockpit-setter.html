@@ -865,7 +865,7 @@
         </div>
     </div>
 
-    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=12"></script>
+    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=13"></script>
     <script>
         // =====================================================================
         // CLIENT CONFIG
@@ -942,7 +942,7 @@
         };
 
         function initTurnkeyEnvironment() {
-            document.querySelectorAll('.cfg-rep-name').forEach(el => el.innerText = clientOnboardingConfig.repName);
+            document.querySelectorAll('.cfg-rep-name').forEach(el => el.innerText = (typeof getRepName === 'function' && getRepName()) || clientOnboardingConfig.repName);
             const dateStr = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
             const dateEl = document.getElementById('intraday-date');
             if (dateEl) dateEl.innerText = dateStr;
