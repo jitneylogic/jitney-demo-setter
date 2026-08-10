@@ -470,7 +470,7 @@
                 
                 let html = `<table><thead><tr><th>Name</th><th>Email</th><th>Current Team</th></tr></thead><tbody>`;
                 reps.forEach(r => {
-                    html += `<tr><td>${r.name}</td><td>${r.email}</td><td><span class="zip-chip">${r.team || 'Unassigned'}</span></td></tr>`;
+                    html += `<tr><td>${r.repName || 'Unknown'}</td><td>${r.email || '—'}</td><td><span class="zip-chip">${r.team || 'Unassigned'}</span></td></tr>`;
                 });
                 html += `</tbody></table>`;
                 area.innerHTML = html;
@@ -491,9 +491,14 @@
                 msg.innerText = `Uploading mapping for ${mapping.length} reps...`;
                 try {
                     // Using the engine's built-in function!
-                    await fireBulkSetTeams(mapping);
-                    msg.innerText = "Teams updated successfully.";
-                    msg.style.color = "var(--color-mint-soft)";
+                    const result = await fireBulkSetTeams(mapping);
+                    if (result.notFound && result.notFound.length > 0) {
+                        msg.innerText = `Updated ${result.updated} rep(s). No matching rep found for: ${result.notFound.join(', ')}`;
+                        msg.style.color = "#ef4444";
+                    } else {
+                        msg.innerText = `Updated ${result.updated} rep(s) successfully.`;
+                        msg.style.color = "var(--color-mint-soft)";
+                    }
                     loadTeamAssignments();
                 } catch(err) {
                     msg.innerText = `Error: ${err.message}`;
