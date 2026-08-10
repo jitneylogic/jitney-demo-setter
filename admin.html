@@ -58,6 +58,23 @@
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-secondary { background: transparent; border: 1px solid var(--color-mint-soft); color: var(--color-mint-soft); }
         .btn-secondary:hover { background: rgba(255,255,255,0.05); }
+        .team-select {
+            width: auto; margin-bottom: 0; padding: 6px 10px; font-size: 13px;
+            background: var(--color-input-darkgreen); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px; color: #fff; font-family: inherit; cursor: pointer;
+        }
+        .team-select:disabled { opacity: 0.5; cursor: not-allowed; }
+        @keyframes team-save-flash {
+            0% { box-shadow: 0 0 0 2px var(--color-sage-accent); }
+            100% { box-shadow: 0 0 0 2px transparent; }
+        }
+        .team-select.just-saved { animation: team-save-flash 900ms ease-out; }
+        .team-registry-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;
+            margin-bottom: 8px; font-size: 14px;
+        }
+        .team-registry-row:last-child { margin-bottom: 0; }
         
         .hint { font-size: 13px; opacity: 0.75; margin: -10px 0 16px; }
         
@@ -144,6 +161,18 @@
         <!-- TAB: TEAM ASSIGNMENTS -->
         <div id="tab-teams" class="tab-pane">
             <div class="card">
+                <h2>Manage Teams</h2>
+                <div class="hint">The real list of teams for this client. Create as many as you need — this is what populates the dropdown below and the reassignment menu in Current Assignments.</div>
+                <label>New Team Name</label>
+                <input type="text" id="new-team-name-input" placeholder="e.g. Fleabags" onkeydown="if(event.key==='Enter') handleCreateTeam()">
+                <button onclick="handleCreateTeam()">Create Team</button>
+                <div id="teams-registry-msg" style="margin-top: 12px; font-size: 13px;"></div>
+                <div id="teams-registry-area" style="margin-top: 16px;">
+                    <p class="hint">Loading...</p>
+                </div>
+            </div>
+
+            <div class="card">
                 <h2>Bulk Set Teams (CSV)</h2>
                 <div class="hint">Two columns: <code>email,team</code>. Leave team blank to unassign.</div>
                 <input type="file" id="teams-csv-input" accept=".csv">
@@ -153,7 +182,7 @@
             
             <div class="card">
                 <h2>Current Assignments</h2>
-                <button class="btn-secondary" onclick="loadTeamAssignments()" style="margin-bottom: 16px;">Refresh List</button>
+                <button class="btn-secondary" onclick="refreshTeamsTab()" style="margin-bottom: 16px;">Refresh List</button>
                 <div id="teams-list-area">
                     <p class="hint">Click refresh to load current reps.</p>
                 </div>
@@ -221,7 +250,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=11"></script>
+    <script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=12"></script>
     
     <script>
         // System Config
@@ -257,7 +286,7 @@
             document.getElementById(`tab-${tabId}`).classList.add('active');
 
             if (tabId === 'zips') handleRefreshList();
-            if (tabId === 'teams') loadTeamAssignments();
+            if (tabId === 'teams') refreshTeamsTab();
             if (tabId === 'queue') startLiveQueueListener();
             else stopLiveQueueListener();
         }
@@ -326,7 +355,7 @@
                     window.JITNEYLOGIC_CONFIG.clientId = e.target.value.trim();
                     const activeTab = document.querySelector('.tab-pane.active').id;
                     if(activeTab === 'tab-zips') handleRefreshList();
-                    if(activeTab === 'tab-teams') loadTeamAssignments();
+                    if(activeTab === 'tab-teams') refreshTeamsTab();
                     if(activeTab === 'tab-queue') startLiveQueueListener();
                 });
             }
@@ -454,6 +483,110 @@
         }
 
       // ---- MODULE B: TEAM ASSIGNMENTS ----
+        // Real Firestore-backed team registry now — clients/{clientId}/teams,
+        // mediated through jitneyleads (list_teams/create_team/rename_team/
+        // delete_team). No hardcoded list. window.currentTeamsList is the
+        // in-memory cache used both by the registry card below and by the
+        // reassignment dropdown in Current Assignments.
+        window.currentTeamsList = [];
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // Called on tab switch and by the Refresh List button — loads the
+        // team registry and the rep assignments together so the dropdown
+        // is always built from current data, never a stale cache.
+        async function refreshTeamsTab() {
+            await loadTeamsRegistry();
+            await loadTeamAssignments();
+        }
+
+        async function loadTeamsRegistry() {
+            const area = document.getElementById('teams-registry-area');
+            try {
+                const teams = await fireListTeams();
+                window.currentTeamsList = teams || [];
+                if (!teams || teams.length === 0) {
+                    area.innerHTML = "<p class='hint'>No teams yet. Create one above.</p>";
+                    return;
+                }
+                let html = '';
+                teams.forEach(t => {
+                    html += `<div class="team-registry-row" data-team-id="${escapeHtml(t.id)}">
+                        <span>${escapeHtml(t.name)}</span>
+                        <span>
+                            <button class="btn-secondary" style="padding:6px 12px; font-size:11px;" onclick="handleRenameTeam('${escapeHtml(t.id)}', '${escapeHtml(t.name)}')">Rename</button>
+                            <button class="btn-secondary" style="padding:6px 12px; font-size:11px; border-color:#ef4444; color:#ef4444;" onclick="handleDeleteTeam('${escapeHtml(t.id)}', '${escapeHtml(t.name)}')">Delete</button>
+                        </span>
+                    </div>`;
+                });
+                area.innerHTML = html;
+            } catch (err) {
+                area.innerHTML = `<div class="save-warning">Failed to load teams: ${err.message}</div>`;
+                window.currentTeamsList = [];
+            }
+        }
+
+        async function handleCreateTeam() {
+            const input = document.getElementById('new-team-name-input');
+            const msg = document.getElementById('teams-registry-msg');
+            const name = input.value.trim();
+            if (!name) { msg.innerText = "Enter a team name first."; msg.style.color = "#ef4444"; return; }
+            msg.innerText = "Creating...";
+            msg.style.color = "";
+            try {
+                await fireCreateTeam(name);
+                input.value = '';
+                msg.innerText = `"${name}" created.`;
+                msg.style.color = "var(--color-mint-soft)";
+                await loadTeamsRegistry();
+                await loadTeamAssignments();
+            } catch (err) {
+                msg.innerText = `Error: ${err.message}`;
+                msg.style.color = "#ef4444";
+            }
+        }
+
+        async function handleRenameTeam(teamId, currentName) {
+            const newName = prompt(`Rename "${currentName}" to:`, currentName);
+            if (newName === null) return; // cancelled
+            const trimmed = newName.trim();
+            if (!trimmed || trimmed === currentName) return;
+            const msg = document.getElementById('teams-registry-msg');
+            msg.innerText = `Renaming "${currentName}"...`;
+            msg.style.color = "";
+            try {
+                await fireRenameTeam(teamId, trimmed);
+                msg.innerText = `Renamed "${currentName}" to "${trimmed}". Every rep on that team was moved automatically.`;
+                msg.style.color = "var(--color-mint-soft)";
+                await loadTeamsRegistry();
+                await loadTeamAssignments();
+            } catch (err) {
+                msg.innerText = `Error: ${err.message}`;
+                msg.style.color = "#ef4444";
+            }
+        }
+
+        async function handleDeleteTeam(teamId, name) {
+            if (!confirm(`Delete "${name}"? Anyone currently on this team will become Unassigned — this can't be undone.`)) return;
+            const msg = document.getElementById('teams-registry-msg');
+            msg.innerText = `Deleting "${name}"...`;
+            msg.style.color = "";
+            try {
+                const result = await fireDeleteTeam(teamId);
+                msg.innerText = `Deleted "${name}"${result.unassigned ? ` — ${result.unassigned} rep(s) moved to Unassigned` : ''}.`;
+                msg.style.color = "var(--color-mint-soft)";
+                await loadTeamsRegistry();
+                await loadTeamAssignments();
+            } catch (err) {
+                msg.innerText = `Error: ${err.message}`;
+                msg.style.color = "#ef4444";
+            }
+        }
+
         async function loadTeamAssignments() {
             const clientId = getActiveClientId();
             if (!clientId) return;
@@ -468,14 +601,60 @@
                     return;
                 }
                 
+                const teamNames = (window.currentTeamsList || []).map(t => t.name);
                 let html = `<table><thead><tr><th>Name</th><th>Email</th><th>Current Team</th></tr></thead><tbody>`;
                 reps.forEach(r => {
-                    html += `<tr><td>${r.repName || 'Unknown'}</td><td>${r.email || '—'}</td><td><span class="zip-chip">${r.team || 'Unassigned'}</span></td></tr>`;
+                    const email = r.email || '';
+                    const currentTeam = r.team || '';
+                    let optionsHtml = `<option value="">Unassigned</option>`;
+                    teamNames.forEach(t => {
+                        const sel = t === currentTeam ? 'selected' : '';
+                        optionsHtml += `<option value="${escapeHtml(t)}" ${sel}>${escapeHtml(t)}</option>`;
+                    });
+                    // If a rep's current team was deleted from the registry
+                    // out-of-band, still show it as an option so the dropdown
+                    // doesn't silently jump to "Unassigned" under them.
+                    if (currentTeam && !teamNames.includes(currentTeam)) {
+                        optionsHtml += `<option value="${escapeHtml(currentTeam)}" selected>${escapeHtml(currentTeam)} (deleted)</option>`;
+                    }
+                    const disabledAttr = email ? '' : 'disabled title="No email on file for this rep"';
+                    html += `<tr>
+                        <td>${escapeHtml(r.repName || 'Unknown')}</td>
+                        <td>${escapeHtml(email || '—')}</td>
+                        <td>
+                            <select class="team-select" data-email="${escapeHtml(email)}" data-previous-value="${escapeHtml(currentTeam)}" onchange="handleTeamReassign(this)" ${disabledAttr}>
+                                ${optionsHtml}
+                            </select>
+                        </td>
+                    </tr>`;
                 });
                 html += `</tbody></table>`;
                 area.innerHTML = html;
             } catch (err) {
                 area.innerHTML = `<div class="save-warning">Failed to load teams: ${err.message}</div>`;
+            }
+        }
+
+        async function handleTeamReassign(selectEl) {
+            const email = selectEl.dataset.email;
+            const newTeam = selectEl.value;
+            const previousValue = selectEl.dataset.previousValue || '';
+            if (!email) return;
+            selectEl.disabled = true;
+            try {
+                const result = await fireBulkSetTeams([{ email, team: newTeam }]);
+                if (result.notFound && result.notFound.length > 0) {
+                    throw new Error("No matching rep found for that email.");
+                }
+                selectEl.dataset.previousValue = newTeam;
+                selectEl.classList.remove('just-saved');
+                void selectEl.offsetWidth; // restart the flash animation on repeat changes
+                selectEl.classList.add('just-saved');
+            } catch (err) {
+                alert(`Failed to move ${email} to "${newTeam || 'Unassigned'}": ${err.message}`);
+                selectEl.value = previousValue;
+            } finally {
+                selectEl.disabled = false;
             }
         }
 
