@@ -901,8 +901,8 @@ function renderPersonalStats(prefix, statsDoc) {
     setText(`${prefix}-sold`, callsSold);
     setText(`${prefix}-rate`, callsTaken > 0 ? ((callsSold / callsTaken) * 100).toFixed(1) + "%" : "0.0%");
     setText(`${prefix}-tcv`, "$" + revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-    setText(`${prefix}-acv`, callsSold > 0 ? "$" + (revenue / callsSold).toFixed(2) : "$0.00");
-    setText(`${prefix}-rpc`, callsTaken > 0 ? "$" + (revenue / callsTaken).toFixed(2) : "$0.00");
+    setText(`${prefix}-acv`, callsSold > 0 ? "$" + (revenue / callsSold).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "$0.00");
+    setText(`${prefix}-rpc`, callsTaken > 0 ? "$" + (revenue / callsTaken).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "$0.00");
 
     // Approximation: applies the CURRENT commission-input rate against total
     // revenue. Accurate if commission % stays consistent; doesn't retroactively
@@ -1043,7 +1043,7 @@ function renderDepartmentCard(prefix, statsDoc) {
     setText(`${prefix}-closed`, callsSold);
     setText(`${prefix}-rate`, callsTaken > 0 ? ((callsSold / callsTaken) * 100).toFixed(1) + "%" : "0.0%");
     setText(`${prefix}-rev`, "$" + revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-    setText(`${prefix}-rpc`, callsTaken > 0 ? "$" + (revenue / callsTaken).toFixed(2) : "$0.00");
+    setText(`${prefix}-rpc`, callsTaken > 0 ? "$" + (revenue / callsTaken).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "$0.00");
 }
 
 function renderRepStandingsTable(statsDoc) {
@@ -1069,7 +1069,7 @@ function renderRepStandingsTable(statsDoc) {
 
     tbody.innerHTML = rows.map((row, index) => {
         const rate = row.callsTaken > 0 ? ((row.callsSold / row.callsTaken) * 100).toFixed(1) + "%" : "0.0%";
-        const rpc = row.callsTaken > 0 ? "$" + (row.revenue / row.callsTaken).toFixed(2) : "$0.00";
+        const rpc = row.callsTaken > 0 ? "$" + (row.revenue / row.callsTaken).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "$0.00";
         const rankClass = index === 0 ? "rank-row-1" : (index === 1 ? "rank-row-2" : "");
         return `
             <tr class="${rankClass}">
@@ -1164,6 +1164,7 @@ async function fireRevenuePipelineTracking(event) {
         if (!document.getElementById('right-address').value.trim()) missing.push("Service Address");
         if (!document.getElementById('appointment-date').value) missing.push("Service Date");
         if (!document.getElementById('package-select').value) missing.push("Package");
+        if (!currentSqftTier) missing.push("Square Footage");
 
         if (missing.length > 0) {
             alert("Before marking this call Sold, please fill in: " + missing.join(", "));
@@ -1278,7 +1279,8 @@ async function fireRevenuePipelineTracking(event) {
     currentAddressComponents = null;
     const accountNumberElReset = document.getElementById('account-number');
     if (accountNumberElReset) accountNumberElReset.value = ""; // element removed from UI, kept null-safe in case it's ever reintroduced
-    document.getElementById('create-customer-status').innerText = "";
+    const createCustomerStatusEl = document.getElementById('create-customer-status');
+    if (createCustomerStatusEl) createCustomerStatusEl.innerText = ""; // element removed from UI, kept null-safe in case it's ever reintroduced — this line previously threw unguarded and silently aborted the rest of this function, including the currentActiveLeadId reset below
     window.currentCallId = null;
     window.currentFieldroutesAccountNumber = null;
     window.currentActiveLeadId = null;
