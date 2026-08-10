@@ -268,7 +268,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAdT027lWYDDB6Ab58_h0JfvnehSt8UPF0&libraries=places&loading=async" async defer></script>
-<script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=12"></script>
+<script src="https://jitneylogic.github.io/jitney-demo-setter/jitneylogic-engine-setter.js?v=13"></script>
 <script>
     window.JITNEYLOGIC_CONFIG = {
         clientId: "demo-pest-co",
@@ -384,19 +384,17 @@
     }
 
     function validateSubmitState() {
-        const phone = document.getElementById('setter-customer-phone').value.replace(/\D/g, '');
-        const isValidPhone = isValidPhoneLength(phone);
         const hasReason = !!document.getElementById('unqualified-reason-select').value;
         
         document.getElementById('btn-live-transfer').style.opacity = hasReason ? '0.4' : '1';
         document.getElementById('btn-callback-queue').style.opacity = hasReason ? '0.4' : '1';
         
-        document.getElementById('btn-live-transfer').disabled = !isValidPhone || hasReason;
-        document.getElementById('btn-callback-queue').disabled = !isValidPhone || hasReason;
+        document.getElementById('btn-live-transfer').disabled = hasReason;
+        document.getElementById('btn-callback-queue').disabled = hasReason;
         
         const unqualBtn = document.getElementById('btn-unqualified-submit');
         unqualBtn.style.display = hasReason ? 'block' : 'none';
-        unqualBtn.disabled = !isValidPhone || !hasReason;
+        unqualBtn.disabled = !hasReason;
     }
 
     function setButtonsDisabled(disabled) {
@@ -412,7 +410,7 @@
             return;
         }
         if (!isValidPhoneLength(lead.customerPhone)) {
-            showStatus("Phone number must be 10-12 digits.", true);
+            alert("Phone number must be 10-12 digits.");
             return;
         }
         if (lead.pestTypes.length === 0) {
@@ -449,7 +447,7 @@
             return;
         }
         if (!isValidPhoneLength(lead.customerPhone)) {
-            showStatus("Phone number must be 10-12 digits.", true);
+            alert("Phone number must be 10-12 digits.");
             return;
         }
         if (!reason) {
