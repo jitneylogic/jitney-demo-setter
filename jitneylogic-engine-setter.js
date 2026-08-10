@@ -1634,6 +1634,65 @@ async function fireBulkSetTeams(assignments) {
 }
 window.fireBulkSetTeams = fireBulkSetTeams;
 
+// EXEC ADMIN — the real team registry for this client. Source of truth
+// for "what teams exist," used to populate the reassignment dropdown and
+// the admin team-management UI. No client-side hardcoded list anywhere.
+async function fireListTeams() {
+    const config = getConfig();
+    const authHeader = await getAuthHeader();
+    const resp = await fetch(config.leadsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify({ action: "list_teams", clientId: config.clientId })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.status !== "success") throw new Error(data.message || "Couldn't list teams.");
+    return data.teams; // [{id, name}, ...]
+}
+window.fireListTeams = fireListTeams;
+
+async function fireCreateTeam(name) {
+    const config = getConfig();
+    const authHeader = await getAuthHeader();
+    const resp = await fetch(config.leadsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify({ action: "create_team", clientId: config.clientId, name })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.status !== "success") throw new Error(data.message || "Couldn't create team.");
+    return data.team; // {id, name}
+}
+window.fireCreateTeam = fireCreateTeam;
+
+async function fireRenameTeam(teamId, newName) {
+    const config = getConfig();
+    const authHeader = await getAuthHeader();
+    const resp = await fetch(config.leadsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify({ action: "rename_team", clientId: config.clientId, teamId, newName })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.status !== "success") throw new Error(data.message || "Couldn't rename team.");
+    return data.team;
+}
+window.fireRenameTeam = fireRenameTeam;
+
+async function fireDeleteTeam(teamId) {
+    const config = getConfig();
+    const authHeader = await getAuthHeader();
+    const resp = await fetch(config.leadsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify({ action: "delete_team", clientId: config.clientId, teamId })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.status !== "success") throw new Error(data.message || "Couldn't delete team.");
+    return data; // { unassigned }
+}
+window.fireDeleteTeam = fireDeleteTeam;
+
 // Pure client-side grouping — combines whatever stats doc is already
 // being rendered (daily/weekly/monthly, all already have rep_breakdown
 // with real per-rep numbers) with the rep_teams mapping, at render time.
