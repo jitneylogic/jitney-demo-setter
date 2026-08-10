@@ -7,10 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-    /* Everything in this block is copied directly from enterprisecockpit's
-       real CSS (tokens, then component classes), not reproduced from
-       memory or approximated — same variables, same class names, so this
-       page is a real visual match, not just a same-color-palette cousin. */
     :root {
         --color-bg-dark: #223129;
         --color-box-translucent: rgba(255, 255, 255, 0.05);
@@ -55,18 +51,6 @@
         color: var(--color-mint-soft);
         border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 10px;
     }
-
-    /* Single centered column — the real cockpit's two-pane split doesn't
-       apply here (no script/negotiation side to mirror), but the card and
-       form treatment inside it is the same #input-pane styling. */
-    /* The shared engine's evaluateAuthGateState() sets #app-content's
-       display to "flex" via inline JS (built for the closer cockpit's
-       side-by-side two-pane layout). This page has one column, not two
-       panes, so it needs flex-direction explicitly set to column here —
-       without this, the two children (the form and the footer bar) lay
-       out as a row instead of stacking, which is the exact bug from the
-       screenshot. The JS only ever touches `display`, never
-       flex-direction, so this rule isn't fighting anything. */
     #app-content { flex-direction: column; align-items: center; }
 
     #setter-pane { max-width: 640px; margin: 0 auto; padding: 40px 24px 24px; width: 100%; }
@@ -90,12 +74,6 @@
     input:focus, select:focus, textarea:focus { border-color: var(--color-sage-accent); outline: none; box-shadow: 0 0 0 3px var(--focus-glow); }
     textarea { min-height: 70px; resize: vertical; }
 
-    /* Multiselect dropdown — same classes/values as #input-pane's version in
-       the closer cockpit, so it looks and behaves identically. Deliberately
-       NOT reusing that page's toggleDropdownWindow()/updateDisplayBoxText()
-       JS functions though — those are hardcoded to that page's specific
-       element IDs and call a pricing function this page has no use for.
-       Setter-specific versions are defined below in the script instead. */
     .multiselect-container { position: relative; width: 100%; z-index: 10; }
     .multiselect-container.active { z-index: 9999; }
     .select-display-box {
@@ -118,30 +96,15 @@
     .checkbox-dropdown-window label:hover { background: rgba(255,255,255,0.1); }
     .checkbox-dropdown-window input[type="checkbox"] { width: auto; margin: 0; cursor: pointer; }
 
-    .qual-toggle { display: flex; gap: 10px; margin-bottom: 18px; }
-    .qual-toggle button {
-        flex: 1; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
-        background: rgba(0,0,0,0.15); color: var(--text-on-dark); cursor: pointer; font-size: 13px; font-weight: 600;
-        font-family: inherit; transition: all 0.2s;
-    }
-    .qual-toggle button.active-qualified { background: var(--color-sage-accent); border-color: var(--color-sage-accent); }
-    .qual-toggle button.active-unqualified { background: #7a3b3b; border-color: #7a3b3b; }
-
-    /* Real button classes, unmodified */
     .btn-primary {
         width: 100%; background: var(--color-sage-accent); color: white; border: none;
         padding: 16px; font-size: 15px; font-weight: 700; border-radius: 8px; cursor: pointer;
         transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px;
     }
-    .btn-primary:hover { background: #3d7a5c; transform: translateY(-1px); }
-    .btn-primary:active { transform: translateY(1px); }
+    .btn-primary:hover:not(:disabled) { background: #3d7a5c; transform: translateY(-1px); }
+    .btn-primary:active:not(:disabled) { transform: translateY(1px); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-transaction { font-family: 'Manrope', sans-serif; font-weight: 700; letter-spacing: 1px; }
-    .btn-secondary {
-        width: 100%; background: transparent; color: var(--color-mint-soft); border: 1px solid var(--color-mint-soft);
-        padding: 14px; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer;
-        text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; font-family: inherit; transition: all 0.2s;
-    }
-    .btn-secondary:hover { background: rgba(255,255,255,0.05); }
     .btn-logout {
         background: var(--color-sage-accent); color: #ffffff; border: none; padding: 9px 20px;
         font-size: 11px; font-weight: 700; border-radius: 7px; cursor: pointer; text-transform: uppercase;
@@ -151,9 +114,6 @@
 
     #status-msg { margin-top: 14px; font-size: 13px; text-align: center; min-height: 18px; }
 
-    /* Footer bar — same theme-toggle-wrapper/logged-in-block classes and
-       layout as the real cockpit's footer, just without the "Hide Script
-       Pane" button, which has no equivalent here. */
     .theme-toggle-wrapper {
         max-width: 640px; width: 100%; margin: 0 auto; padding: 20px 24px 40px;
         border-top: 1px solid rgba(255,255,255,0.1);
@@ -171,8 +131,6 @@
 </head>
 <body>
 
-<!-- Login gate — copied structure from the real cockpit's, same IDs, so
-     attemptLogin()/attemptForcedReset() in the shared engine work unchanged. -->
 <div id="login-gate" style="display:flex; align-items:center; justify-content:center; height:100vh; width:100vw; position:fixed; top:0; left:0; background:var(--color-bg-dark); z-index:1000;">
     <div style="background:var(--color-box-translucent); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:30px; width:320px; box-shadow:var(--shadow-soft);">
         <h2 style="margin-top:0;">Setter Login</h2>
@@ -192,10 +150,6 @@
     </div>
 </div>
 
-<!-- Same forced-first-login-reset gate as the real cockpit. Without this,
-     any setter account created with must_reset_password would hit a blank
-     screen here instead — evaluateAuthGateState() looks for this exact ID
-     and only shows it if it exists. -->
 <div id="force-reset-gate" style="display:none; align-items:center; justify-content:center; height:100vh; width:100vw; position:fixed; top:0; left:0; background:var(--color-bg-dark); z-index:1000;">
     <div style="background:var(--color-box-translucent); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:30px; width:320px; box-shadow:var(--shadow-soft);">
         <h2 style="margin-top:0;">Set Your Password</h2>
@@ -224,7 +178,7 @@
                 </div>
                 <div class="form-group">
                     <label>Phone Number</label>
-                    <input type="tel" id="setter-customer-phone" placeholder="(555) 555-5555" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 12);">
+                    <input type="tel" id="setter-customer-phone" placeholder="(555) 555-5555" oninput="this.value = this.value.replace(/\D/g, '').slice(0, 12); validateSubmitState();">
                 </div>
             </div>
 
@@ -269,13 +223,13 @@
             </div>
 
             <div id="qualified-buttons" style="display:flex; gap:10px;">
-                <button type="button" class="btn-primary btn-transaction" id="btn-live-transfer" onclick="handleQualifiedSubmit('live')" style="flex:1;">Live Transfer</button>
-                <button type="button" class="btn-primary btn-transaction" id="btn-callback-queue" onclick="handleQualifiedSubmit('queue')" style="flex:1;">Callback Queue</button>
+                <button type="button" class="btn-primary btn-transaction" id="btn-live-transfer" onclick="handleQualifiedSubmit('live')" style="flex:1;" disabled>Live Transfer</button>
+                <button type="button" class="btn-primary btn-transaction" id="btn-callback-queue" onclick="handleQualifiedSubmit('queue')" style="flex:1;" disabled>Callback Queue</button>
             </div>
 
             <div class="form-group" style="margin-top:18px;">
                 <label>Unqualified Reason</label>
-                <select id="unqualified-reason-select" onchange="handleUnqualifiedReasonChange()">
+                <select id="unqualified-reason-select" onchange="validateSubmitState()">
                     <option value="">-- Select if not qualified --</option>
                     <option value="Out of Area">Out of Area</option>
                     <option value="Unqualified Pest">Unqualified Pest</option>
@@ -288,7 +242,7 @@
             </div>
 
             <button type="button" id="btn-unqualified-submit" onclick="handleUnqualifiedSubmit()"
-                style="display:none; width:100%; background:#b91c1c; color:#fff; border:none; padding:16px; font-size:15px; font-weight:700; border-radius:8px; cursor:pointer; text-transform:uppercase; letter-spacing:1px; margin-top:10px; font-family:inherit;">
+                style="display:none; width:100%; background:#b91c1c; color:#fff; border:none; padding:16px; font-size:15px; font-weight:700; border-radius:8px; cursor:pointer; text-transform:uppercase; letter-spacing:1px; margin-top:10px; font-family:inherit;" disabled>
                 Unqualified: Submit Call
             </button>
             <div id="status-msg"></div>
@@ -318,8 +272,6 @@
 <script>
     window.JITNEYLOGIC_CONFIG = {
         clientId: "demo-pest-co",
-        // Predicted URL based on your other services' naming pattern —
-        // confirm this matches what `gcloud run deploy` actually printed.
         leadsUrl: "https://jitneyleads-889415757227.us-central1.run.app/",
         adminUrl: "https://jitneyadmin-889415757227.us-central1.run.app/",
         firebaseConfig: {
@@ -331,13 +283,8 @@
             appId: "1:889415757227:web:9e54a600eb654bb30276ee",
             measurementId: "G-4JECF3BX6E"
         }
-        // dialerWebhookUrl intentionally omitted until we know the client's
-        // actual dialer — live transfers still work without it.
     };
 
-    // Setter-specific versions of the closer cockpit's dropdown pattern —
-    // same look, but scoped to this page's own IDs and with no call to any
-    // pricing function, since none of that applies here.
     function toggleSetterPestDropdown(event) {
         event.stopPropagation();
         const panel = document.getElementById('setter-dropdown-checkbox-panel');
@@ -366,7 +313,7 @@
         }
     });
 
-    let zipEligibleState = null; // null = not checked, true = eligible, false = out of area
+    let zipEligibleState = null; 
 
     function resetZipEligibilityState() {
         zipEligibleState = null;
@@ -392,11 +339,8 @@
             } else {
                 statusEl.innerText = '✗ Out of service area';
                 statusEl.style.color = '#ef4444';
-                // Automates the same path a setter would take manually —
-                // selects the reason and runs the exact same grey-out logic
-                // that already fires when a reason is picked by hand.
                 document.getElementById('unqualified-reason-select').value = 'Out of Area';
-                handleUnqualifiedReasonChange();
+                validateSubmitState();
             }
         } catch (err) {
             zipEligibleState = null;
@@ -405,12 +349,6 @@
         }
     }
 
-    // Auto-fills from the selected address's postal code (already
-    // extracted internally by the shared engine, just never surfaced
-    // before) and immediately runs the check — matches "if the customer
-    // gives their address, fill it and check it." If the customer won't
-    // give an address, the setter types the zip directly instead; this
-    // hook simply never fires in that case.
     window.onAddressSelected = function (components) {
         if (components && components.zip) {
             document.getElementById('setter-zip-input').value = components.zip;
@@ -421,7 +359,7 @@
     function readLeadFromForm() {
         return {
             customerName: document.getElementById('setter-customer-name').value.trim(),
-            customerPhone: document.getElementById('setter-customer-phone').value.trim(),
+            customerPhone: document.getElementById('setter-customer-phone').value.replace(/\D/g, '').trim(),
             address: document.getElementById('setter-address-input').value.trim(),
             pestTypes: Array.from(document.querySelectorAll('.setter-pest-cb:checked')).map(cb => cb.value),
             notes: document.getElementById('setter-notes').value.trim()
@@ -438,7 +376,27 @@
         updateSetterPestDisplayText();
         document.getElementById('setter-notes').value = '';
         document.getElementById('unqualified-reason-select').value = '';
-        handleUnqualifiedReasonChange(); // resets the grey-out/hide state too
+        validateSubmitState(); 
+    }
+
+    function isValidPhoneLength(phone) {
+        return phone.length >= 10 && phone.length <= 12;
+    }
+
+    function validateSubmitState() {
+        const phone = document.getElementById('setter-customer-phone').value.replace(/\D/g, '');
+        const isValidPhone = isValidPhoneLength(phone);
+        const hasReason = !!document.getElementById('unqualified-reason-select').value;
+        
+        document.getElementById('btn-live-transfer').style.opacity = hasReason ? '0.4' : '1';
+        document.getElementById('btn-callback-queue').style.opacity = hasReason ? '0.4' : '1';
+        
+        document.getElementById('btn-live-transfer').disabled = !isValidPhone || hasReason;
+        document.getElementById('btn-callback-queue').disabled = !isValidPhone || hasReason;
+        
+        const unqualBtn = document.getElementById('btn-unqualified-submit');
+        unqualBtn.style.display = hasReason ? 'block' : 'none';
+        unqualBtn.disabled = !isValidPhone || !hasReason;
     }
 
     function setButtonsDisabled(disabled) {
@@ -447,34 +405,8 @@
         document.getElementById('btn-unqualified-submit').disabled = disabled;
     }
 
-    // A reason selected greys out the qualified-path buttons and reveals
-    // the red submit button — on purpose, so there's no accidental click
-    // sending a genuinely qualified call away, and no accidental submit
-    // of an unqualified call without a reason logged first.
-    function handleUnqualifiedReasonChange() {
-        const hasReason = !!document.getElementById('unqualified-reason-select').value;
-        document.getElementById('btn-live-transfer').style.opacity = hasReason ? '0.4' : '1';
-        document.getElementById('btn-live-transfer').disabled = hasReason;
-        document.getElementById('btn-callback-queue').style.opacity = hasReason ? '0.4' : '1';
-        document.getElementById('btn-callback-queue').disabled = hasReason;
-        document.getElementById('btn-unqualified-submit').style.display = hasReason ? 'block' : 'none';
-    }
-
-    // Live Transfer / Callback Queue — clicking either one submits
-    // immediately. Qualified is implied by which button was pressed; no
-    // separate toggle anymore.
-    // Digits are already stripped live via the phone field's oninput, so
-    // by the time this runs, a valid number is 10-12 plain digits (allows
-    // for an extra area/country code prefix without hardcoding exactly 10).
-    function isValidPhoneLength(phone) {
-        return phone.length >= 10 && phone.length <= 12;
-    }
-
     async function handleQualifiedSubmit(transferType) {
         const lead = readLeadFromForm();
-        // Every field required except address — some customers won't give
-        // that up this early, but a qualified lead needs everything else:
-        // name, phone, at least one pest/service selected, and notes.
         if (!lead.customerName || !lead.customerPhone) {
             showStatus("Name and phone are required before submitting.", true);
             return;
@@ -505,7 +437,7 @@
         } catch (err) {
             showStatus(err.message, true);
         } finally {
-            setButtonsDisabled(false);
+            validateSubmitState();
         }
     }
 
@@ -535,7 +467,7 @@
         } catch (err) {
             showStatus(err.message, true);
         } finally {
-            setButtonsDisabled(false);
+            validateSubmitState();
         }
     }
 
@@ -550,10 +482,6 @@
         initAddressAutocomplete(['setter-address-input']);
     }
 
-    // Real theme toggle, not an approximation — same function name and
-    // localStorage key as the closer cockpit, so a rep's choice carries
-    // over between the two. No script-pane sub-state to toggle here since
-    // there's no script pane on this page.
     function setScriptPaneTheme(mode) {
         document.body.classList.toggle('theme-executive', mode === 'executive');
         document.getElementById('theme-btn-dark').classList.toggle('active', mode === 'dark');
